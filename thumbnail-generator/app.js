@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const canvas = document.getElementById('thumbnail-canvas');
-    const ctx = canvas.getContext('2d');
+    let ctx = canvas.getContext('2d');
 
     // Inputs
     const seriesTitleInput = document.getElementById('seriesTitle');
@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Buttons
     const generateBtn = document.getElementById('generate-btn');
     const downloadBtn = document.getElementById('download-btn');
+    const downloadCoverBtn = document.getElementById('download-cover-btn');
     const addParticipantBtn = document.getElementById('add-participant');
 
     // Form elements
@@ -106,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     generateBtn.addEventListener('click', () => {
         renderCanvas();
         downloadBtn.disabled = false;
+        downloadCoverBtn.disabled = false;
     });
 
     downloadBtn.addEventListener('click', () => {
@@ -116,12 +118,31 @@ document.addEventListener('DOMContentLoaded', () => {
         link.click();
     });
 
+    downloadCoverBtn.addEventListener('click', () => {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = 1440;
+        tempCanvas.height = 1440;
+        
+        const originalCtx = ctx;
+        ctx = tempCanvas.getContext('2d');
+        
+        renderCanvas(true);
+        
+        const link = document.createElement('a');
+        const episodeFileName = episodeTitleInput.value.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+        link.download = `${episodeFileName}-cover.png`;
+        link.href = tempCanvas.toDataURL('image/png');
+        link.click();
+        
+        ctx = originalCtx;
+    });
+
     // ----------------------------------------------------
     // Canvas Drawing Logic - The Comic Book Zing 🚀
     // ----------------------------------------------------
-    function renderCanvas() {
-        const width = canvas.width;
-        const height = canvas.height;
+    function renderCanvas(isCover = false) {
+        const width = ctx.canvas.width;
+        const height = ctx.canvas.height;
         const themeColor = themeColorInput.value;
 
         // 1. Clear background
@@ -134,18 +155,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // 3. Draw Halftone pattern overlay
         drawHalftone(width, height);
 
-        // 4. Draw Participants
-        drawParticipants(width, height);
+        if (!isCover) {
+            // 4. Draw Participants
+            drawParticipants(width, height);
 
-        // 5. Draw Episode Number inside a starburst
-        drawEpisodeNumber(width, height, episodeNumberInput.value, themeColor);
+            // 5. Draw Episode Number inside a starburst
+            drawEpisodeNumber(width, height, episodeNumberInput.value, themeColor);
+        }
 
         // 6. Draw Texts
         drawText(seriesTitleInput.value, width / 2, 250, 160, '#ffffff', true, -0.05); // Series Title
         
         // Wrap episode title onto balanced lines
         const balancedTitle = balanceText(episodeTitleInput.value);
-        drawText(balancedTitle, width / 2, height - Math.max(150, height / 8) - 30, 200, '#ffea00', false, 0, true); // Episode Title
+        if (isCover) {
+            drawText(balancedTitle, width / 2, height / 2 + 100, 200, '#ffea00', false, 0, true); // Episode Title Cover Centered
+        } else {
+            drawText(balancedTitle, width / 2, height - Math.max(150, height / 8) - 30, 200, '#ffea00', false, 0, true); // Episode Title Normal
+        }
     }
 
     function drawSunburst(width, height, baseColor) {
