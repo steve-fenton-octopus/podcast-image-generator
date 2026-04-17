@@ -110,7 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     downloadBtn.addEventListener('click', () => {
         const link = document.createElement('a');
-        link.download = `thumbnail-${seriesTitleInput.value.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.png`;
+        const episodeFileName = episodeTitleInput.value.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+        link.download = `${episodeFileName}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
     });
@@ -141,7 +142,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 6. Draw Texts
         drawText(seriesTitleInput.value, width / 2, 250, 160, '#ffffff', true, -0.05); // Series Title
-        drawText(episodeTitleInput.value, width / 2, height - Math.max(150, height / 8), 220, '#ffea00', false, 0, true); // Episode Title
+        
+        // Wrap episode title onto balanced lines
+        const balancedTitle = balanceText(episodeTitleInput.value);
+        drawText(balancedTitle, width / 2, height - Math.max(150, height / 8) - 30, 200, '#ffea00', false, 0, true); // Episode Title
     }
 
     function drawSunburst(width, height, baseColor) {
@@ -286,8 +290,9 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.restore(); // remove clip
             ctx.restore(); // remove rotation
 
-            // Draw Participant Name in a "Speech Bubble" or standard yellow comic box below them
-            drawParticipantName(p.name, x + panelWidth / 2, panelY + panelHeight + 80, rotate);
+            // Draw Participant Name on the top-left of each image at a jaunty angle
+            const jauntyAngle = -0.18 + (idx % 2 === 0 ? 0 : 0.06); // Alternate angle slightly
+            drawParticipantName(p.name, x + 220, panelY + 20, jauntyAngle);
         });
 
         ctx.restore();
@@ -332,15 +337,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         ctx.save();
 
-        const x = width - 350;
-        const y = 350;
+        const x = width - 300;
+        const y = 220;
 
         ctx.translate(x, y);
 
         // Pulsing / jagged starburst shape
         const points = 16;
-        const outerRadius = 250;
-        const innerRadius = 150;
+        const outerRadius = 190;
+        const innerRadius = 110;
 
         // Shadow/Offset for starburst
         ctx.beginPath();
@@ -378,7 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.stroke();
 
         // Text inside starburst
-        ctx.font = '120px "Bangers", impact, sans-serif';
+        ctx.font = '90px "Bangers", impact, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
@@ -395,8 +400,10 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.restore();
     }
 
-    function drawText(text, x, y, fontSize, fillStyle, isRotated = false, rotationAngle = 0, is3D = false) {
-        if (!text) return;
+    function drawText(textParam, x, y, fontSize, fillStyle, isRotated = false, rotationAngle = 0, is3D = false) {
+        if (!textParam) return;
+
+        const lines = Array.isArray(textParam) ? textParam : [textParam];
 
         ctx.save();
         ctx.translate(x, y);
@@ -410,30 +417,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
         ctx.lineJoin = 'round';
 
-        if (is3D) {
-            // Extrude text effect
-            const extrudeDist = 20;
-            ctx.fillStyle = '#000000';
-            for (let i = extrudeDist; i > 0; i--) {
-                ctx.fillText(text, i, i);
+        const lineHeight = fontSize * 1.1;
+        const startY = -((lines.length - 1) * lineHeight) / 2;
+
+        lines.forEach((line, index) => {
+            const lineY = startY + index * lineHeight;
+
+            if (is3D) {
+                // Extrude text effect
+                const extrudeDist = 20;
+                ctx.fillStyle = '#000000';
+                for (let i = extrudeDist; i > 0; i--) {
+                    ctx.fillText(line, i, i + lineY);
+                }
+            } else {
+                // Drop shadow text
+                ctx.lineWidth = fontSize * 0.15;
+                ctx.strokeStyle = '#000000';
+                ctx.strokeText(line, 15, 15 + lineY);
             }
-        } else {
-            // Drop shadow text
-            ctx.lineWidth = fontSize * 0.15;
+
+            // Main Text Outline
+            ctx.lineWidth = fontSize * 0.12; // Thick black outline
             ctx.strokeStyle = '#000000';
-            ctx.strokeText(text, 15, 15);
-        }
+            ctx.strokeText(line, 0, lineY);
 
-        // Main Text Outline
-        ctx.lineWidth = fontSize * 0.12; // Thick black outline
-        ctx.strokeStyle = '#000000';
-        ctx.strokeText(text, 0, 0);
-
-        // Main Text Fill
-        ctx.fillStyle = fillStyle;
-        ctx.fillText(text, 0, 0);
+            // Main Text Fill
+            ctx.fillStyle = fillStyle;
+            ctx.fillText(line, 0, lineY);
+        });
 
         ctx.restore();
+    }
+
+    // Helper to balance text into two lines
+    function balanceText(text) {
+        if (!text) return [""];
+        const words = text.split(' ');
+        if (words.length <= 1) return [text];
+        
+        let bestDiff = Infinity;
+        let bestSplit = 1;
+        
+        for (let i = 1; i < words.length; i++) {
+            const line1 = words.slice(0, i).join(' ');
+            const line2 = words.slice(i).join(' ');
+            const diff = Math.abs(line1.length - line2.length);
+            if (diff < bestDiff) {
+                bestDiff = diff;
+                bestSplit = i;
+            }
+        }
+        
+        return [
+            words.slice(0, bestSplit).join(' '),
+            words.slice(bestSplit).join(' ')
+        ];
     }
 
     // Helper to lighten hex color for the sunburst
