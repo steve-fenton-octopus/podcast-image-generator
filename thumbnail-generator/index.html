@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comic Book Thumbnail Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>Thumbnail Generator</h1>
+                <p>Create explosive comic-style thumbnails.</p>
+            </div>
+            
+            <form id="generator-form">
+                <div class="form-group">
+                    <label for="seriesTitle">Series Title</label>
+                    <input type="text" id="seriesTitle" value="CD Office Hours" placeholder="e.g. Let's Play">
+                </div>
+                
+                <div class="form-group">
+                    <label for="episodeTitle">Episode Title</label>
+                    <input type="text" id="episodeTitle" value="The Kubernetes Adventure" placeholder="e.g. The Final Boss">
+                </div>
+                
+                <div class="form-group row">
+                    <div class="col">
+                        <label for="episodeNumber">Episode Number</label>
+                        <input type="text" id="episodeNumber" value="#42" placeholder="e.g. #1">
+                    </div>
+                    <div class="col">
+                        <label for="themeColor">Theme Color</label>
+                        <input type="color" id="themeColor" value="#ff2a2a">
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
+                <div class="section-title">
+                    <h3>Participants</h3>
+                    <button type="button" id="add-participant" class="btn-small">+ Add</button>
+                </div>
+                
+                <div id="participants-list">
+                    <!-- Participant rows will be dynamically added here -->
+                </div>
+
+                <div class="actions">
+                    <button type="button" id="generate-btn" class="btn btn-primary">Generate Thumbnail</button>
+                    <button type="button" id="download-btn" class="btn btn-success" disabled>Download (2560x1440)</button>
+                </div>
+            </form>
+        </aside>
+        
+        <main class="preview-area">
+            <div class="canvas-wrapper">
+                <canvas id="thumbnail-canvas" width="2560" height="1440"></canvas>
+            </div>
+        </main>
+    </div>
+
+    <!-- Template for participant row -->
+    <template id="participant-template">
+        <div class="participant-item">
+            <div class="participant-header">
+                <input type="text" class="participant-name" placeholder="Participant Name" value="Guest">
+                <button type="button" class="btn-remove-participant" aria-label="Remove">&times;</button>
+            </div>
+            <div class="participant-upload">
+                <label class="file-label">
+                    <span>Upload Image</span>
+                    <input type="file" class="participant-image-input" accept="image/png, image/jpeg, image/webp">
+                </label>
+                <div class="file-name">No file chosen</div>
+            </div>
+        </div>
+    </template>
+
+    <script src="app.js"></script>
+</body>
+</html>

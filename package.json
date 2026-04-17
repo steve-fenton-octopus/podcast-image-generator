@@ -1,0 +1,10 @@
+{
+    "name": "cd-office-hours-thumbnail-generator",
+    "version": "1.0.0",
+    "scripts": {
+        "start": "pnpm serve ./thumbnail-generator -p 8080"
+    },
+    "devDependencies": {
+        "serve": "^14.2.3"
+    }
+}
