@@ -1,17 +1,27 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const FONT_LOAD_DELAY_MS = 200;
+    const COVER_CANVAS_SIZE = 1440;
+
+    const SERIES_TITLE_Y = 250;
+    const SERIES_TITLE_SIZE = 160;
+    const EPISODE_TITLE_SIZE = 200;
+    const COVER_EPISODE_TITLE_Y_OFFSET = 100;
+    const EPISODE_TITLE_BOTTOM_MIN_GAP = 150;
+    const EPISODE_TITLE_BOTTOM_EXTRA = 30;
+
+    const SUNBURST_RAY_COUNT = 24;
+    const SUNBURST_RADIUS_PADDING = 100;
+
     const STATE = {
         participants: [] // stores { id, name, imgObj, imgSrc }
     };
 
-    // Check if fonts are loaded before generating
     document.fonts.ready.then(() => {
-        console.log('Fonts loaded');
-        // Give a slight delay to ensure 'Bangers' triggers appropriately on canvas
-        setTimeout(() => renderCanvas(), 200);
+        setTimeout(() => renderCanvas(ctx), FONT_LOAD_DELAY_MS);
     });
 
     const canvas = document.getElementById('thumbnail-canvas');
-    let ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
 
     // Inputs
     const seriesTitleInput = document.getElementById('seriesTitle');
@@ -28,6 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Form elements
     const participantsList = document.getElementById('participants-list');
     const participantTemplate = document.getElementById('participant-template');
+
+    function slugifyEpisodeFilename(title) {
+        return title.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+    }
 
     function createParticipantRow(initialName = '', initialImageUrl = null) {
         const id = Date.now().toString() + Math.random().toString();
@@ -105,14 +119,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Render Canvas
     generateBtn.addEventListener('click', () => {
-        renderCanvas();
+        renderCanvas(ctx);
         downloadBtn.disabled = false;
         downloadCoverBtn.disabled = false;
     });
 
     downloadBtn.addEventListener('click', () => {
         const link = document.createElement('a');
-        const episodeFileName = episodeTitleInput.value.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+        const episodeFileName = slugifyEpisodeFilename(episodeTitleInput.value);
         link.download = `${episodeFileName}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
@@ -120,70 +134,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
     downloadCoverBtn.addEventListener('click', () => {
         const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = 1440;
-        tempCanvas.height = 1440;
-        
-        const originalCtx = ctx;
-        ctx = tempCanvas.getContext('2d');
-        
-        renderCanvas(true);
-        
+        tempCanvas.width = COVER_CANVAS_SIZE;
+        tempCanvas.height = COVER_CANVAS_SIZE;
+
+        const coverCtx = tempCanvas.getContext('2d');
+        renderCanvas(coverCtx, true);
+
         const link = document.createElement('a');
-        const episodeFileName = episodeTitleInput.value.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+        const episodeFileName = slugifyEpisodeFilename(episodeTitleInput.value);
         link.download = `${episodeFileName}-cover.png`;
         link.href = tempCanvas.toDataURL('image/png');
         link.click();
-        
-        ctx = originalCtx;
     });
 
     // ----------------------------------------------------
-    // Canvas Drawing Logic - The Comic Book Zing 🚀
+    // Canvas drawing
     // ----------------------------------------------------
-    function renderCanvas(isCover = false) {
-        const width = ctx.canvas.width;
-        const height = ctx.canvas.height;
+    function renderCanvas(renderCtx, isCover = false) {
+        const width = renderCtx.canvas.width;
+        const height = renderCtx.canvas.height;
         const themeColor = themeColorInput.value;
 
-        // 1. Clear background
-        ctx.fillStyle = '#111';
-        ctx.fillRect(0, 0, width, height);
+        renderCtx.fillStyle = '#111';
+        renderCtx.fillRect(0, 0, width, height);
 
-        // 2. Draw Sunburst rays background (Comic style action lines)
-        drawSunburst(width, height, themeColor);
-
-        // 3. Draw Halftone pattern overlay
-        drawHalftone(width, height);
+        drawSunburst(renderCtx, width, height, themeColor);
+        drawHalftone(renderCtx, width, height);
 
         if (!isCover) {
-            // 4. Draw Participants
-            drawParticipants(width, height);
-
-            // 5. Draw Episode Number inside a starburst
-            drawEpisodeNumber(width, height, episodeNumberInput.value, themeColor);
+            drawParticipants(renderCtx, width, height);
+            drawEpisodeNumber(renderCtx, width, height, episodeNumberInput.value, themeColor);
         }
 
-        // 6. Draw Texts
-        drawText(seriesTitleInput.value, width / 2, 250, 160, '#ffffff', true, -0.05); // Series Title
-        
-        // Wrap episode title onto balanced lines
+        drawText(renderCtx, seriesTitleInput.value, width / 2, SERIES_TITLE_Y, SERIES_TITLE_SIZE, '#ffffff', true, -0.05);
+
         const balancedTitle = balanceText(episodeTitleInput.value);
         if (isCover) {
-            drawText(balancedTitle, width / 2, height / 2 + 100, 200, '#ffea00', false, 0, true); // Episode Title Cover Centered
+            drawText(renderCtx, balancedTitle, width / 2, height / 2 + COVER_EPISODE_TITLE_Y_OFFSET, EPISODE_TITLE_SIZE, '#ffea00', false, 0, true);
         } else {
-            drawText(balancedTitle, width / 2, height - Math.max(150, height / 8) - 30, 200, '#ffea00', false, 0, true); // Episode Title Normal
+            drawText(
+                renderCtx,
+                balancedTitle,
+                width / 2,
+                height - Math.max(EPISODE_TITLE_BOTTOM_MIN_GAP, height / 8) - EPISODE_TITLE_BOTTOM_EXTRA,
+                EPISODE_TITLE_SIZE,
+                '#ffea00',
+                false,
+                0,
+                true
+            );
         }
     }
 
-    function drawSunburst(width, height, baseColor) {
+    function drawSunburst(ctx, width, height, baseColor) {
         ctx.save();
         ctx.translate(width / 2, height / 2);
 
-        const rays = 24;
-        const radius = Math.sqrt(width * width + height * height) + 100; // reach corners
+        const rays = SUNBURST_RAY_COUNT;
+        const radius = Math.sqrt(width * width + height * height) + SUNBURST_RADIUS_PADDING;
 
-        // Create an alternating dark/light version of the theme color
-        // Using raw HSL would be cleaner but let's interpolate simply
         for (let i = 0; i < rays; i++) {
             const angle = (i * Math.PI * 2) / rays;
             const nextAngle = ((i + 1) * Math.PI * 2) / rays;
@@ -194,11 +203,9 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.lineTo(Math.cos(nextAngle) * radius, Math.sin(nextAngle) * radius);
             ctx.closePath();
 
-            // Alternate colors
             ctx.fillStyle = (i % 2 === 0) ? baseColor : lightenColor(baseColor, 40);
             ctx.fill();
 
-            // Add thick comic borders between rays
             ctx.lineWidth = 12;
             ctx.strokeStyle = '#000000';
             ctx.stroke();
@@ -206,63 +213,55 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.restore();
     }
 
-    function drawHalftone(width, height) {
+    function drawHalftone(ctx, width, height) {
         ctx.save();
         ctx.globalCompositeOperation = 'overlay';
         ctx.globalAlpha = 0.2;
         ctx.fillStyle = '#000000';
 
         const spacing = 18;
-        const radius = 6;
+        const dotRadius = 6;
         for (let y = 0; y < height; y += spacing) {
             for (let x = 0; x < width; x += spacing) {
-                // Shift every other row for hex-like pattern
                 const shiftX = (y / spacing) % 2 === 0 ? 0 : spacing / 2;
                 ctx.beginPath();
-                ctx.arc(x + shiftX, y, radius, 0, Math.PI * 2);
+                ctx.arc(x + shiftX, y, dotRadius, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
         ctx.restore();
     }
 
-    function drawParticipants(width, height) {
+    function drawParticipants(ctx, width, height) {
         const activeParticipants = STATE.participants.filter(p => p.imgObj);
         if (activeParticipants.length === 0) return;
 
         ctx.save();
 
-        // Settings based on number of participants
         const padding = 120;
-        let panelsCount = activeParticipants.length;
-        const panelWidth = (width - padding * (panelsCount + 1)) / panelsCount;
-        // Keep them roughly vertically centered but shifted down slightly to make room for Title
+        const n = activeParticipants.length;
+        const panelWidth = (width - padding * (n + 1)) / n;
         const panelY = height / 2 - 200;
         const panelHeight = 800;
 
         activeParticipants.forEach((p, idx) => {
             const x = padding + idx * (panelWidth + padding);
 
-            // Draw a slightly rotated comic panel box
             ctx.save();
             ctx.translate(x + panelWidth / 2, panelY + panelHeight / 2);
-            // Slight alternating rotation
             const rotate = (idx % 2 === 0) ? -0.04 : 0.04;
             ctx.rotate(rotate);
             ctx.translate(-(x + panelWidth / 2), -(panelY + panelHeight / 2));
 
-            // Drop shadow for the panel
             ctx.fillStyle = '#000000';
             ctx.fillRect(x + 25, panelY + 25, panelWidth, panelHeight);
 
-            // Panel background (white rim)
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(x, panelY, panelWidth, panelHeight);
             ctx.lineWidth = 15;
             ctx.strokeStyle = '#000000';
             ctx.strokeRect(x, panelY, panelWidth, panelHeight);
 
-            // Clip region for the image inside the border
             ctx.save();
             const innerMargin = 15;
             const irX = x + innerMargin;
@@ -274,30 +273,25 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.rect(irX, irY, irW, irH);
             ctx.clip();
 
-            // Draw participant image, scale to cover
             const imgRatio = p.imgObj.width / p.imgObj.height;
             const boxRatio = irW / irH;
 
             let drawW = irW;
             let drawH = irH;
             if (imgRatio > boxRatio) {
-                // image is wider than box -> match height, crop width
                 drawW = irH * imgRatio;
                 drawH = irH;
             } else {
                 drawW = irW;
                 drawH = irW / imgRatio;
             }
-            // center it
             const dx = irX + (irW - drawW) / 2;
             const dy = irY + (irH - drawH) / 2;
 
-            // Cartoonize / Pop art effect
             ctx.filter = 'contrast(120%) saturate(120%) brightness(110%)';
             ctx.drawImage(p.imgObj, dx, dy, drawW, drawH);
             ctx.filter = 'none';
 
-            // Optional half tone over the image to blend it into the comic style
             const hSpacing = 12;
             const hRadius = 4;
             ctx.save();
@@ -314,18 +308,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             ctx.restore();
 
-            ctx.restore(); // remove clip
-            ctx.restore(); // remove rotation
+            ctx.restore();
+            ctx.restore();
 
-            // Draw Participant Name on the top-left of each image at a jaunty angle
-            const jauntyAngle = -0.18 + (idx % 2 === 0 ? 0 : 0.06); // Alternate angle slightly
-            drawParticipantName(p.name, x + 220, panelY + 20, jauntyAngle);
+            const jauntyAngle = -0.18 + (idx % 2 === 0 ? 0 : 0.06);
+            drawParticipantName(ctx, p.name, x + 220, panelY + 20, jauntyAngle);
         });
 
         ctx.restore();
     }
 
-    function drawParticipantName(name, x, y, rotation) {
+    function drawParticipantName(ctx, name, x, y, rotation) {
         if (!name.trim()) return;
 
         ctx.save();
@@ -339,27 +332,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const metrics = ctx.measureText(name);
         const textWidth = metrics.width;
         const boxPaddingW = 50;
-        const boxPaddingH = 30;
 
-        // Draw black shadow for box
         ctx.fillStyle = '#000';
         ctx.fillRect(-textWidth / 2 - boxPaddingW + 10, -50 + 10, textWidth + boxPaddingW * 2, 100);
 
-        // Draw yellow box
         ctx.fillStyle = '#ffea00';
         ctx.fillRect(-textWidth / 2 - boxPaddingW, -50, textWidth + boxPaddingW * 2, 100);
         ctx.lineWidth = 8;
         ctx.strokeStyle = '#000';
         ctx.strokeRect(-textWidth / 2 - boxPaddingW, -50, textWidth + boxPaddingW * 2, 100);
 
-        // Draw text
         ctx.fillStyle = '#000000';
-        ctx.fillText(name, 0, 5); // manual vertical alignment adjustment
+        ctx.fillText(name, 0, 5);
 
         ctx.restore();
     }
 
-    function drawEpisodeNumber(width, height, text, themeColor) {
+    function drawEpisodeNumber(ctx, width, height, text, themeColor) {
         if (!text) return;
 
         ctx.save();
@@ -369,18 +358,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         ctx.translate(x, y);
 
-        // Pulsing / jagged starburst shape
         const points = 16;
         const outerRadius = 190;
         const innerRadius = 110;
 
-        // Shadow/Offset for starburst
         ctx.beginPath();
         for (let i = 0; i < points * 2; i++) {
-            const radius = i % 2 === 0 ? outerRadius : innerRadius;
+            const r = i % 2 === 0 ? outerRadius : innerRadius;
             const angle = (i * Math.PI) / points;
-            const px = Math.cos(angle) * radius + 20; // 20px shadow offset
-            const py = Math.sin(angle) * radius + 20;
+            const px = Math.cos(angle) * r + 20;
+            const py = Math.sin(angle) * r + 20;
             if (i === 0) ctx.moveTo(px, py);
             else ctx.lineTo(px, py);
         }
@@ -388,46 +375,40 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = '#000000';
         ctx.fill();
 
-        // Main starburst
         ctx.beginPath();
         for (let i = 0; i < points * 2; i++) {
-            // slightly randomized radiuses for extra comic zing
             const rOffset = Math.random() * 20 - 10;
-            const radius = (i % 2 === 0 ? outerRadius : innerRadius) + rOffset;
+            const r = (i % 2 === 0 ? outerRadius : innerRadius) + rOffset;
             const angle = (i * Math.PI) / points;
-            const px = Math.cos(angle) * radius;
-            const py = Math.sin(angle) * radius;
+            const px = Math.cos(angle) * r;
+            const py = Math.sin(angle) * r;
             if (i === 0) ctx.moveTo(px, py);
             else ctx.lineTo(px, py);
         }
         ctx.closePath();
 
-        // Use contrasting color (like yellow or cyan depending on theme, we'll hardcode yellow pop)
         ctx.fillStyle = '#ffea00';
         ctx.fill();
         ctx.lineWidth = 15;
         ctx.strokeStyle = '#000000';
         ctx.stroke();
 
-        // Text inside starburst
         ctx.font = '90px "Bangers", impact, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Text Outline
         ctx.lineWidth = 16;
         ctx.lineJoin = 'round';
         ctx.strokeStyle = '#000000';
         ctx.strokeText(text, 0, 10);
 
-        // Text Fill
-        ctx.fillStyle = '#ff2a2a'; // vibrant red text for contrast
+        ctx.fillStyle = '#ff2a2a';
         ctx.fillText(text, 0, 10);
 
         ctx.restore();
     }
 
-    function drawText(textParam, x, y, fontSize, fillStyle, isRotated = false, rotationAngle = 0, is3D = false) {
+    function drawText(ctx, textParam, x, y, fontSize, fillStyle, isRotated = false, rotationAngle = 0, is3D = false) {
         if (!textParam) return;
 
         const lines = Array.isArray(textParam) ? textParam : [textParam];
@@ -451,25 +432,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const lineY = startY + index * lineHeight;
 
             if (is3D) {
-                // Extrude text effect
                 const extrudeDist = 20;
                 ctx.fillStyle = '#000000';
                 for (let i = extrudeDist; i > 0; i--) {
                     ctx.fillText(line, i, i + lineY);
                 }
             } else {
-                // Drop shadow text
                 ctx.lineWidth = fontSize * 0.15;
                 ctx.strokeStyle = '#000000';
                 ctx.strokeText(line, 15, 15 + lineY);
             }
 
-            // Main Text Outline
-            ctx.lineWidth = fontSize * 0.12; // Thick black outline
+            ctx.lineWidth = fontSize * 0.12;
             ctx.strokeStyle = '#000000';
             ctx.strokeText(line, 0, lineY);
 
-            // Main Text Fill
             ctx.fillStyle = fillStyle;
             ctx.fillText(line, 0, lineY);
         });
@@ -477,15 +454,14 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.restore();
     }
 
-    // Helper to balance text into two lines
     function balanceText(text) {
         if (!text) return [""];
         const words = text.split(' ');
         if (words.length <= 1) return [text];
-        
+
         let bestDiff = Infinity;
         let bestSplit = 1;
-        
+
         for (let i = 1; i < words.length; i++) {
             const line1 = words.slice(0, i).join(' ');
             const line2 = words.slice(i).join(' ');
@@ -495,20 +471,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 bestSplit = i;
             }
         }
-        
+
         return [
             words.slice(0, bestSplit).join(' '),
             words.slice(bestSplit).join(' ')
         ];
     }
 
-    // Helper to lighten hex color for the sunburst
+    function clampByte(value) {
+        if (value < 1) return 0;
+        if (value > 255) return 255;
+        return value;
+    }
+
     function lightenColor(color, percent) {
-        const num = parseInt(color.replace("#", ""), 16),
-            amt = Math.round(2.55 * percent),
-            R = (num >> 16) + amt,
-            B = (num >> 8 & 0x00FF) + amt,
-            G = (num & 0x0000FF) + amt;
-        return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + (B < 255 ? B < 1 ? 0 : B : 255) * 0x100 + (G < 255 ? G < 1 ? 0 : G : 255)).toString(16).slice(1);
+        const num = parseInt(color.replace("#", ""), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = clampByte(((num >> 16) & 0xff) + amt);
+        const G = clampByte(((num >> 8) & 0xff) + amt);
+        const B = clampByte((num & 0xff) + amt);
+        return "#" + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
     }
 });
