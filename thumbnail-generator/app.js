@@ -16,12 +16,22 @@ document.addEventListener('DOMContentLoaded', () => {
         participants: [] // stores { id, name, imgObj, imgSrc }
     };
 
-    document.fonts.ready.then(() => {
-        setTimeout(() => renderCanvas(ctx), FONT_LOAD_DELAY_MS);
-    });
-
     const canvas = document.getElementById('thumbnail-canvas');
     const ctx = canvas.getContext('2d');
+
+    let previewFrameScheduled = false;
+    function refreshPreview() {
+        if (previewFrameScheduled) return;
+        previewFrameScheduled = true;
+        requestAnimationFrame(() => {
+            previewFrameScheduled = false;
+            renderCanvas(ctx);
+        });
+    }
+
+    document.fonts.ready.then(() => {
+        setTimeout(refreshPreview, FONT_LOAD_DELAY_MS);
+    });
 
     // Inputs
     const seriesTitleInput = document.getElementById('seriesTitle');
@@ -68,12 +78,14 @@ document.addEventListener('DOMContentLoaded', () => {
             img.onload = function () {
                 participantObj.imgObj = img;
                 participantObj.imgSrc = initialImageUrl;
+                refreshPreview();
             };
             img.src = initialImageUrl;
         }
 
         nameInput.addEventListener('input', (e) => {
             participantObj.name = e.target.value;
+            refreshPreview();
         });
 
         fileInput.addEventListener('change', (e) => {
@@ -87,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     img.onload = function () {
                         participantObj.imgObj = img;
                         participantObj.imgSrc = event.target.result;
+                        refreshPreview();
                     };
                     img.src = event.target.result;
                 };
@@ -97,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         removeBtn.addEventListener('click', () => {
             STATE.participants = STATE.participants.filter(p => p.id !== id);
             row.remove();
+            refreshPreview();
         });
 
         participantsList.appendChild(clone);
@@ -115,11 +129,19 @@ document.addEventListener('DOMContentLoaded', () => {
         createParticipantRow(name, `defaults/Participants/${filename}`);
     });
 
-    addParticipantBtn.addEventListener('click', () => createParticipantRow());
+    addParticipantBtn.addEventListener('click', () => {
+        createParticipantRow();
+        refreshPreview();
+    });
+
+    seriesTitleInput.addEventListener('input', refreshPreview);
+    episodeTitleInput.addEventListener('input', refreshPreview);
+    episodeNumberInput.addEventListener('input', refreshPreview);
+    themeColorInput.addEventListener('input', refreshPreview);
 
     // Render Canvas
     generateBtn.addEventListener('click', () => {
-        renderCanvas(ctx);
+        refreshPreview();
         downloadBtn.disabled = false;
         downloadCoverBtn.disabled = false;
     });
