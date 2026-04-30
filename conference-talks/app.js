@@ -36,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inputs
     const seriesTitleInput = document.getElementById('seriesTitle');
     const episodeTitleInput = document.getElementById('episodeTitle');
-    const episodeNumberInput = document.getElementById('episodeNumber');
     const themeColorInput = document.getElementById('themeColor');
 
     // Buttons
@@ -132,7 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     seriesTitleInput.addEventListener('input', refreshPreview);
     episodeTitleInput.addEventListener('input', refreshPreview);
-    episodeNumberInput.addEventListener('input', refreshPreview);
     themeColorInput.addEventListener('input', refreshPreview);
 
     // Render Canvas
@@ -181,25 +179,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!isCover) {
             drawParticipants(renderCtx, width, height);
-            drawEpisodeNumber(renderCtx, width, height, episodeNumberInput.value, themeColor);
         }
 
-        drawText(renderCtx, seriesTitleInput.value, width / 2, SERIES_TITLE_Y, SERIES_TITLE_SIZE, '#ffffff', true, -0.05);
+        const textZoneLeft = width / 3;
+        const textInset = Math.max(56, width * 0.028);
+        const textAnchorX = textZoneLeft + textInset;
+
+        drawText(renderCtx, seriesTitleInput.value, textAnchorX, SERIES_TITLE_Y, SERIES_TITLE_SIZE, '#ffffff', true, -0.05, false, 'left');
 
         const balancedTitle = balanceText(episodeTitleInput.value);
         if (isCover) {
-            drawText(renderCtx, balancedTitle, width / 2, height / 2 + COVER_EPISODE_TITLE_Y_OFFSET, EPISODE_TITLE_SIZE, '#ffea00', false, 0, true);
+            drawText(
+                renderCtx,
+                balancedTitle,
+                textAnchorX,
+                height / 2 + COVER_EPISODE_TITLE_Y_OFFSET,
+                EPISODE_TITLE_SIZE,
+                '#ffea00',
+                false,
+                0,
+                true,
+                'left'
+            );
         } else {
             drawText(
                 renderCtx,
                 balancedTitle,
-                width / 2,
+                textAnchorX,
                 height - Math.max(EPISODE_TITLE_BOTTOM_MIN_GAP, height / 8) - EPISODE_TITLE_BOTTOM_EXTRA,
                 EPISODE_TITLE_SIZE,
                 '#ffea00',
                 false,
                 0,
-                true
+                true,
+                'left'
             );
         }
     }
@@ -376,67 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.restore();
     }
 
-    function drawEpisodeNumber(ctx, width, height, text, themeColor) {
-        if (!text) return;
-
-        ctx.save();
-
-        const x = width - 300;
-        const y = 220;
-
-        ctx.translate(x, y);
-
-        const points = 16;
-        const outerRadius = 190;
-        const innerRadius = 110;
-
-        ctx.beginPath();
-        for (let i = 0; i < points * 2; i++) {
-            const r = i % 2 === 0 ? outerRadius : innerRadius;
-            const angle = (i * Math.PI) / points;
-            const px = Math.cos(angle) * r + 20;
-            const py = Math.sin(angle) * r + 20;
-            if (i === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
-        }
-        ctx.closePath();
-        ctx.fillStyle = '#000000';
-        ctx.fill();
-
-        ctx.beginPath();
-        for (let i = 0; i < points * 2; i++) {
-            const rOffset = Math.random() * 20 - 10;
-            const r = (i % 2 === 0 ? outerRadius : innerRadius) + rOffset;
-            const angle = (i * Math.PI) / points;
-            const px = Math.cos(angle) * r;
-            const py = Math.sin(angle) * r;
-            if (i === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
-        }
-        ctx.closePath();
-
-        ctx.fillStyle = '#ffea00';
-        ctx.fill();
-        ctx.lineWidth = 15;
-        ctx.strokeStyle = '#000000';
-        ctx.stroke();
-
-        ctx.font = '90px "Bangers", impact, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        ctx.lineWidth = 16;
-        ctx.lineJoin = 'round';
-        ctx.strokeStyle = '#000000';
-        ctx.strokeText(text, 0, 10);
-
-        ctx.fillStyle = '#ff2a2a';
-        ctx.fillText(text, 0, 10);
-
-        ctx.restore();
-    }
-
-    function drawText(ctx, textParam, x, y, fontSize, fillStyle, isRotated = false, rotationAngle = 0, is3D = false) {
+    function drawText(ctx, textParam, x, y, fontSize, fillStyle, isRotated = false, rotationAngle = 0, is3D = false, textAlign = 'center') {
         if (!textParam) return;
 
         const lines = Array.isArray(textParam) ? textParam : [textParam];
@@ -448,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         ctx.font = `${fontSize}px "Bangers", impact, sans-serif`;
-        ctx.textAlign = 'center';
+        ctx.textAlign = textAlign;
         ctx.textBaseline = 'middle';
 
         ctx.lineJoin = 'round';
