@@ -11,9 +11,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const SUNBURST_RAY_COUNT = 24;
     const SUNBURST_RADIUS_PADDING = 100;
+    const SUNBURST_ALPHA = 0.55;
+    const DEFAULT_BACKGROUND_SLIDE = 'defaults/Conference-Slide.png';
 
     const STATE = {
-        participants: [] // stores { id, name, imgObj, imgSrc }
+        participants: [], // stores { id, name, imgObj, imgSrc }
+        backgroundSlide: null
     };
 
     const canvas = document.getElementById('thumbnail-canvas');
@@ -47,6 +50,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Form elements
     const participantsList = document.getElementById('participants-list');
     const participantTemplate = document.getElementById('participant-template');
+    const backgroundSlideInput = document.getElementById('backgroundSlide');
+    const backgroundSlideFilename = document.getElementById('background-slide-filename');
 
     function slugifyEpisodeFilename(title) {
         return title.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
@@ -124,6 +129,44 @@ document.addEventListener('DOMContentLoaded', () => {
         createParticipantRow(name, `defaults/Participants/${filename}`);
     });
 
+    function loadBackgroundSlideFromUrl(url, displayName) {
+        const img = new Image();
+        img.onload = function () {
+            STATE.backgroundSlide = img;
+            if (displayName) {
+                backgroundSlideFilename.textContent = displayName;
+            }
+            refreshPreview();
+        };
+        img.onerror = function () {
+            STATE.backgroundSlide = null;
+            if (displayName) {
+                backgroundSlideFilename.textContent = displayName + ' (failed to load)';
+            }
+            refreshPreview();
+        };
+        img.src = url;
+    }
+
+    loadBackgroundSlideFromUrl(DEFAULT_BACKGROUND_SLIDE, 'Conference-Slide.png');
+
+    backgroundSlideInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            backgroundSlideFilename.textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const img = new Image();
+                img.onload = function () {
+                    STATE.backgroundSlide = img;
+                    refreshPreview();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
     addParticipantBtn.addEventListener('click', () => {
         createParticipantRow();
         refreshPreview();
@@ -174,6 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCtx.fillStyle = '#111';
         renderCtx.fillRect(0, 0, width, height);
 
+        drawBackgroundSlide(renderCtx, width, height);
         drawSunburst(renderCtx, width, height, themeColor, isCover);
         drawHalftone(renderCtx, width, height);
 
@@ -217,8 +261,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function drawBackgroundSlide(ctx, width, height) {
+        const img = STATE.backgroundSlide;
+        if (!img || !img.complete || !img.naturalWidth) return;
+
+        const iw = img.naturalWidth;
+        const ih = img.naturalHeight;
+        const scale = Math.max(width / iw, height / ih);
+        const dw = iw * scale;
+        const dh = ih * scale;
+        const dx = (width - dw) / 2;
+        const dy = (height - dh) / 2;
+        ctx.drawImage(img, dx, dy, dw, dh);
+    }
+
     function drawSunburst(ctx, width, height, baseColor, isCover = false) {
         ctx.save();
+        ctx.globalAlpha = SUNBURST_ALPHA;
         const originX = isCover ? width / 2 : width / 6;
         const originY = height / 2;
         ctx.translate(originX, originY);
