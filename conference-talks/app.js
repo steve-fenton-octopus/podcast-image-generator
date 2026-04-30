@@ -256,14 +256,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         ctx.save();
 
-        const padding = 120;
         const n = activeParticipants.length;
-        const panelWidth = (width - padding * (n + 1)) / n;
-        const panelY = height / 2 - 200;
-        const panelHeight = 800;
+        const leftZoneW = width / 3;
+        const zonePadX = Math.max(80, width * 0.04);
+        const zonePadY = Math.max(72, height * 0.065);
+        const panelWidth = Math.max(200, leftZoneW - 2 * zonePadX);
+        const x0 = zonePadX;
+        const gapY = 44;
+        const maxPanelH = 800;
+
+        const availableStackH = height - 2 * zonePadY - (n - 1) * gapY;
+        const panelHeight = Math.min(maxPanelH, availableStackH / n);
+
+        const stackH = n * panelHeight + (n - 1) * gapY;
+        const startY = (height - stackH) / 2;
 
         activeParticipants.forEach((p, idx) => {
-            const x = padding + idx * (panelWidth + padding);
+            const x = x0;
+            const panelY = startY + idx * (panelHeight + gapY);
 
             ctx.save();
             ctx.translate(x + panelWidth / 2, panelY + panelHeight / 2);
@@ -330,7 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.restore();
 
             const jauntyAngle = -0.18 + (idx % 2 === 0 ? 0 : 0.06);
-            drawParticipantName(ctx, p.name, x + 220, panelY + 20, jauntyAngle);
+            drawParticipantName(ctx, p.name, x + panelWidth / 2, panelY + 20, jauntyAngle);
         });
 
         ctx.restore();
