@@ -54,6 +54,148 @@ document.addEventListener('DOMContentLoaded', () => {
         return title.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
     }
 
+    function hslFromRgb(r, g, b) {
+        r /= 255;
+        g /= 255;
+        b /= 255;
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const l = (max + min) / 2;
+        let h = 0;
+        let s = 0;
+        if (max !== min) {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max - min);
+            switch (max) {
+                case r:
+                    h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+                    break;
+                case g:
+                    h = ((b - r) / d + 2) / 6;
+                    break;
+                default:
+                    h = ((r - g) / d + 4) / 6;
+            }
+        }
+        return { h, s, l };
+    }
+
+    function hslToRgb(h, s, l) {
+        h = ((h % 1) + 1) % 1;
+        if (s <= 0) {
+            const v = Math.round(l * 255);
+            return { r: v, g: v, b: v };
+        }
+        const hue2rgb = (p, q, t) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        const r = hue2rgb(p, q, h + 1 / 3);
+        const g = hue2rgb(p, q, h);
+        const b = hue2rgb(p, q, h - 1 / 3);
+        return {
+            r: Math.round(Math.min(255, Math.max(0, r * 255))),
+            g: Math.round(Math.min(255, Math.max(0, g * 255))),
+            b: Math.round(Math.min(255, Math.max(0, b * 255)))
+        };
+    }
+
+    /**
+     * Push averaged slide color toward comic-book saturation/lightness while keeping hue from the image.
+     */
+    function comicVividThemeRgb(tr, tg, tb, peakS, peakH) {
+        const avg = hslFromRgb(tr, tg, tb);
+        const hue = avg.s < 0.14 && peakS > 0.07 ? peakH : avg.h;
+        const vividS = Math.min(0.98, Math.max(0.84, avg.s * 0.32 + 0.66));
+        const vividL = Math.min(0.6, Math.max(0.5, 0.34 + avg.l * 0.26 + 0.12));
+        return hslToRgb(hue, vividS, vividL);
+    }
+
+    function deriveThemeColorFromImage(img) {
+        const sample = 48;
+        const c = document.createElement('canvas');
+        c.width = sample;
+        c.height = sample;
+        const cx = c.getContext('2d', { willReadFrequently: true });
+        cx.drawImage(img, 0, 0, sample, sample);
+        const data = cx.getImageData(0, 0, sample, sample).data;
+
+        let tw = 0;
+        let tr = 0;
+        let tg = 0;
+        let tb = 0;
+        let peakS = 0;
+        let peakH = 0;
+
+        for (let i = 0; i < data.length; i += 4) {
+            if (data[i + 3] < 35) continue;
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            const { h, s, l } = hslFromRgb(r, g, b);
+            if (l >= 0.06 && l <= 0.97 && s > peakS) {
+                peakS = s;
+                peakH = h;
+            }
+            if (l < 0.06 || l > 0.97) continue;
+            const lightPreference = 0.12 + 0.88 * l * l;
+            const weight = s * s * lightPreference;
+            tr += r * weight;
+            tg += g * weight;
+            tb += b * weight;
+            tw += weight;
+        }
+
+        if (tw < 1e-6) {
+            tr = tg = tb = 0;
+            let fw = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                if (data[i + 3] < 35) continue;
+                const r0 = data[i];
+                const g0 = data[i + 1];
+                const b0 = data[i + 2];
+                const { l: lum } = hslFromRgb(r0, g0, b0);
+                if (lum < 0.06 || lum > 0.98) continue;
+                const w = 0.12 + 0.88 * lum * lum;
+                tr += r0 * w;
+                tg += g0 * w;
+                tb += b0 * w;
+                fw += w;
+            }
+            if (fw < 1e-6) return '#e62e2e';
+            tr /= fw;
+            tg /= fw;
+            tb /= fw;
+            for (let i = 0; i < data.length; i += 4) {
+                if (data[i + 3] < 35) continue;
+                const { h: hh, s: ss, l: ll } = hslFromRgb(data[i], data[i + 1], data[i + 2]);
+                if (ll >= 0.06 && ll <= 0.98 && ss > peakS) {
+                    peakS = ss;
+                    peakH = hh;
+                }
+            }
+        } else {
+            tr /= tw;
+            tg /= tw;
+            tb /= tw;
+        }
+
+        const vivid = comicVividThemeRgb(tr, tg, tb, peakS, peakH);
+        const clampCh = (x) => Math.max(16, Math.min(255, Math.round(x)));
+        return `#${[vivid.r, vivid.g, vivid.b].map((x) => clampCh(x).toString(16).padStart(2, '0')).join('')}`;
+    }
+
+    function applyThemeColorFromBackground(img) {
+        if (!img || !img.complete || !img.naturalWidth) return;
+        themeColorInput.value = deriveThemeColorFromImage(img);
+    }
+
     function createParticipantRow(initialName = '', initialImageUrl = null) {
         const id = Date.now().toString() + Math.random().toString();
         const clone = participantTemplate.content.cloneNode(true);
@@ -130,6 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const img = new Image();
         img.onload = function () {
             STATE.backgroundSlide = img;
+            applyThemeColorFromBackground(img);
             if (displayName) {
                 backgroundSlideFilename.textContent = displayName;
             }
@@ -156,6 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const img = new Image();
                 img.onload = function () {
                     STATE.backgroundSlide = img;
+                    applyThemeColorFromBackground(img);
                     refreshPreview();
                 };
                 img.src = event.target.result;
