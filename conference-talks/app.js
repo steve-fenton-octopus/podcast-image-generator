@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCtx.fillStyle = '#111';
         renderCtx.fillRect(0, 0, width, height);
 
-        drawSunburst(renderCtx, width, height, themeColor);
+        drawSunburst(renderCtx, width, height, themeColor, isCover);
         drawHalftone(renderCtx, width, height);
 
         if (!isCover) {
@@ -217,9 +217,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function drawSunburst(ctx, width, height, baseColor) {
+    function drawSunburst(ctx, width, height, baseColor, isCover = false) {
         ctx.save();
-        ctx.translate(width / 2, height / 2);
+        const originX = isCover ? width / 2 : width / 6;
+        const originY = height / 2;
+        ctx.translate(originX, originY);
 
         const rays = SUNBURST_RAY_COUNT;
         const radius = Math.sqrt(width * width + height * height) + SUNBURST_RADIUS_PADDING;
