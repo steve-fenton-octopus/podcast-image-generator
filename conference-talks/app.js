@@ -341,16 +341,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const x0 = zonePadX;
         const gapY = 44;
         const maxPanelH = 800;
+        /** Gap from panel bottom edge to name badge (must match visual in drawParticipantName). */
+        const nameLabelGap = 10;
+        const nameBadgeHeight = 100;
+        const nameBelowReserve = nameLabelGap + nameBadgeHeight;
 
-        const availableStackH = height - 2 * zonePadY - (n - 1) * gapY;
-        const panelHeight = Math.min(maxPanelH, availableStackH / n);
+        const availableForPanels =
+            height - 2 * zonePadY - n * nameBelowReserve - (n - 1) * gapY;
+        const panelHeight = Math.min(maxPanelH, Math.max(140, availableForPanels / n));
 
-        const stackH = n * panelHeight + (n - 1) * gapY;
+        const stackH = n * panelHeight + n * nameBelowReserve + (n - 1) * gapY;
         const startY = (height - stackH) / 2;
 
         activeParticipants.forEach((p, idx) => {
             const x = x0;
-            const panelY = startY + idx * (panelHeight + gapY);
+            const panelY = startY + idx * (panelHeight + nameBelowReserve + gapY);
 
             ctx.save();
             ctx.translate(x + panelWidth / 2, panelY + panelHeight / 2);
@@ -416,8 +421,9 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.restore();
             ctx.restore();
 
-            const jauntyAngle = -0.18 + (idx % 2 === 0 ? 0 : 0.06);
-            drawParticipantName(ctx, p.name, x + panelWidth / 2, panelY + 20, jauntyAngle);
+            const nameCenterY = panelY + panelHeight + nameLabelGap + nameBadgeHeight / 2;
+            const jauntyAngle = -0.1 + (idx % 2 === 0 ? 0 : 0.05);
+            drawParticipantName(ctx, p.name, x + panelWidth / 2, nameCenterY, jauntyAngle);
         });
 
         ctx.restore();
