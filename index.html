@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podcast image generators</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Inter, system-ui, sans-serif;
+            background: #0f1115;
+            color: #e8eaed;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem;
+        }
+        p {
+            margin: 0 0 2rem;
+            color: #9aa0a6;
+            font-size: 0.95rem;
+            text-align: center;
+            max-width: 28rem;
+        }
+        ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            max-width: 22rem;
+        }
+        li + li { margin-top: 0.75rem; }
+        a {
+            display: block;
+            padding: 1rem 1.25rem;
+            background: #1a1d24;
+            border: 1px solid #2a2f3a;
+            border-radius: 10px;
+            color: #e8eaed;
+            text-decoration: none;
+            font-weight: 500;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        a:hover {
+            background: #22262f;
+            border-color: #3d4450;
+        }
+        a span {
+            display: block;
+            margin-top: 0.35rem;
+            font-size: 0.8rem;
+            font-weight: 400;
+            color: #9aa0a6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Podcast image generators</h1>
+    <p>Pick a show to open its thumbnail and cover art tools.</p>
+    <ul>
+        <li>
+            <a href="cd-office-hours/">
+                CD Office Hours
+                <span>Comic-style episode thumbnails and square covers</span>
+            </a>
+        </li>
+    </ul>
+</body>
+</html>
