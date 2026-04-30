@@ -11,7 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const SUNBURST_RAY_COUNT = 24;
     const SUNBURST_RADIUS_PADDING = 100;
-    const SUNBURST_ALPHA = 0.55;
+    /** Opacity for alternating “in-between” rays (lighter wedges); primary rays stay opaque. */
+    const SUNBURST_ALT_RAY_ALPHA = 0.55;
     const DEFAULT_BACKGROUND_SLIDE = 'defaults/Conference-Slide.png';
 
     const STATE = {
@@ -277,7 +278,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function drawSunburst(ctx, width, height, baseColor, isCover = false) {
         ctx.save();
-        ctx.globalAlpha = SUNBURST_ALPHA;
         const originX = isCover ? width / 2 : width / 6;
         const originY = height / 2;
         ctx.translate(originX, originY);
@@ -286,6 +286,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const radius = Math.sqrt(width * width + height * height) + SUNBURST_RADIUS_PADDING;
 
         for (let i = 0; i < rays; i++) {
+            const isPrimaryRay = i % 2 === 0;
+            ctx.globalAlpha = isPrimaryRay ? 1 : SUNBURST_ALT_RAY_ALPHA;
+
             const angle = (i * Math.PI * 2) / rays;
             const nextAngle = ((i + 1) * Math.PI * 2) / rays;
 
@@ -295,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.lineTo(Math.cos(nextAngle) * radius, Math.sin(nextAngle) * radius);
             ctx.closePath();
 
-            ctx.fillStyle = (i % 2 === 0) ? baseColor : lightenColor(baseColor, 40);
+            ctx.fillStyle = isPrimaryRay ? baseColor : lightenColor(baseColor, 40);
             ctx.fill();
 
             ctx.lineWidth = 12;
