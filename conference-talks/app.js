@@ -5,10 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const SERIES_TITLE_Y = 250;
     const SERIES_TITLE_SIZE = 160;
     const EPISODE_TITLE_SIZE = 200;
-    const COVER_EPISODE_TITLE_Y_OFFSET = 100;
-    const EPISODE_TITLE_BOTTOM_MIN_GAP = 150;
-    const EPISODE_TITLE_BOTTOM_EXTRA = 30;
-
     const SUNBURST_RAY_COUNT = 24;
     const SUNBURST_RADIUS_PADDING = 100;
     /** Opacity for alternating “in-between” rays (lighter wedges); primary rays stay opaque. */
@@ -233,33 +229,19 @@ document.addEventListener('DOMContentLoaded', () => {
         drawText(renderCtx, seriesTitleInput.value, textAnchorX, SERIES_TITLE_Y, SERIES_TITLE_SIZE, '#ffffff', true, -0.05, false, 'left');
 
         const balancedTitle = balanceText(episodeTitleInput.value);
-        if (isCover) {
-            drawText(
-                renderCtx,
-                balancedTitle,
-                textAnchorX,
-                height / 2 + COVER_EPISODE_TITLE_Y_OFFSET,
-                EPISODE_TITLE_SIZE,
-                '#ffea00',
-                false,
-                0,
-                true,
-                'left'
-            );
-        } else {
-            drawText(
-                renderCtx,
-                balancedTitle,
-                textAnchorX,
-                height - Math.max(EPISODE_TITLE_BOTTOM_MIN_GAP, height / 8) - EPISODE_TITLE_BOTTOM_EXTRA,
-                EPISODE_TITLE_SIZE,
-                '#ffea00',
-                false,
-                0,
-                true,
-                'left'
-            );
-        }
+        const talkTitleY = height / 2;
+        drawText(
+            renderCtx,
+            balancedTitle,
+            textAnchorX,
+            talkTitleY,
+            EPISODE_TITLE_SIZE,
+            '#ffea00',
+            false,
+            0,
+            true,
+            'left'
+        );
     }
 
     function drawBackgroundSlide(ctx, width, height) {
