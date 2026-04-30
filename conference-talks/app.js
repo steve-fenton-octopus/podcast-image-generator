@@ -2,8 +2,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const FONT_LOAD_DELAY_MS = 200;
     const COVER_CANVAS_SIZE = 1440;
 
-    const SERIES_TITLE_Y = 250;
-    const SERIES_TITLE_SIZE = 160;
+    /** Vertical distance between event anchor and talk title anchor (event is above). */
+    const SERIES_TITLE_GAP_ABOVE_TALK = 270;
+    const SERIES_TITLE_SIZE = 100;
     const EPISODE_TITLE_SIZE = 200;
     const SUNBURST_RAY_COUNT = 24;
     const SUNBURST_RADIUS_PADDING = 100;
@@ -370,10 +371,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const textInset = Math.max(56, width * 0.028);
         const textAnchorX = textZoneLeft + textInset;
 
-        drawText(renderCtx, seriesTitleInput.value, textAnchorX, SERIES_TITLE_Y, SERIES_TITLE_SIZE, '#ffffff', true, -0.05, false, 'left');
+        const talkTitleY = height / 2;
+        const seriesTitleY = talkTitleY - SERIES_TITLE_GAP_ABOVE_TALK;
+
+        drawText(renderCtx, seriesTitleInput.value, textAnchorX, seriesTitleY, SERIES_TITLE_SIZE, '#ffffff', true, -0.05, false, 'left');
 
         const balancedTitle = balanceText(episodeTitleInput.value);
-        const talkTitleY = height / 2;
         drawText(
             renderCtx,
             balancedTitle,
