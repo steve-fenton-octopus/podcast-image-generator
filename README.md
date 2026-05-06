@@ -2,7 +2,7 @@
 
 A simple comic book thumbnail generator for CD Office Hours episodes.
 
-[View the application](https://steve-fenton-octopus.github.io/cd-office-hours/thumbnail-generator/)
+[View the application](https://steve-fenton-octopus.github.io/podcast-image-generator/)
 
 ## Usage instructions
 
