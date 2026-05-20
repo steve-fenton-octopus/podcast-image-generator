@@ -261,13 +261,21 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.save();
 
         const padding = 120;
+        const defaultParticipantCount = 3;
         const n = activeParticipants.length;
-        const panelWidth = (width - padding * (n + 1)) / n;
+        const defaultPanelWidth =
+            (width - padding * (defaultParticipantCount + 1)) / defaultParticipantCount;
+        const panelWidth =
+            n <= defaultParticipantCount
+                ? defaultPanelWidth
+                : (width - padding * (n + 1)) / n;
+        const groupWidth = n * panelWidth + (n - 1) * padding;
+        const startX = (width - groupWidth) / 2;
         const panelY = height / 2 - 200;
         const panelHeight = 800;
 
         activeParticipants.forEach((p, idx) => {
-            const x = padding + idx * (panelWidth + padding);
+            const x = startX + idx * (panelWidth + padding);
 
             ctx.save();
             ctx.translate(x + panelWidth / 2, panelY + panelHeight / 2);
