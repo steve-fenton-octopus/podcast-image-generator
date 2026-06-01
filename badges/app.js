@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
 
     const badgeNameInput    = document.getElementById('badgeName');
+    const badgeIconInput    = document.getElementById('badgeIcon');
     const badgeYearInput    = document.getElementById('badgeYear');
     const badgeSidesInput   = document.getElementById('badgeSides');
     const highlightColorInput = document.getElementById('highlightColor');
@@ -32,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.fonts.ready.then(() => setTimeout(refreshPreview, FONT_LOAD_DELAY_MS));
 
     badgeNameInput.addEventListener('input', refreshPreview);
+    badgeIconInput.addEventListener('input', refreshPreview);
     badgeYearInput.addEventListener('input', refreshPreview);
     badgeSidesInput.addEventListener('change', refreshPreview);
     highlightColorInput.addEventListener('input', refreshPreview);
@@ -197,6 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const metal     = METAL_COLORS[getSelectedMetal()];
         const highlight = highlightColorInput.value;
         const name      = (badgeNameInput.value.trim() || 'Badge').toUpperCase();
+        const icon      = badgeIconInput.value.trim();
         const year      = String(badgeYearInput.value || new Date().getFullYear());
 
         renderCtx.clearRect(0, 0, size, size);
@@ -240,7 +243,27 @@ document.addEventListener('DOMContentLoaded', () => {
         // 5. Thin metal accent line at inner edge
         strokeShape(renderCtx, cx, cy, innerRadius, sides, innerCorner, metal.base, size * 0.007);
 
-        // 6. Badge name on ribbon — single line, centred on ribbon midpoint
+        // 6. Icon — same gap above ribbon top as the year has below ribbon bottom
+        const ribbonTop   = ribbonCenterY - ribbonHalfH;
+        const ribbonBottom = ribbonCenterY + ribbonHalfH;
+        const bottomSpace  = (cy + innerRadius) - ribbonBottom;
+        const gapOffset    = bottomSpace * 0.38;
+
+        if (icon) {
+            const aboveSpace   = ribbonTop - (cy - innerRadius);
+            const iconFontSize = Math.min(aboveSpace * 0.72, innerRadius * 0.48);
+            // Place the icon so its bottom edge is gapOffset above the ribbon top
+            const iconY        = ribbonTop - gapOffset - iconFontSize * 0.3;
+
+            renderCtx.save();
+            renderCtx.textAlign    = 'center';
+            renderCtx.textBaseline = 'middle';
+            renderCtx.font         = `${iconFontSize}px sans-serif`;
+            renderCtx.fillText(icon, cx, iconY);
+            renderCtx.restore();
+        }
+
+        // 8. Badge name on ribbon — single line, centred on ribbon midpoint
         const textMaxWidth = innerRadius * 1.55;
         const fontSize     = fitSingleLine(renderCtx, name, textMaxWidth, size * 0.1, size * 0.038, '700');
 
@@ -254,10 +277,8 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCtx.letterSpacing = '0';
         renderCtx.restore();
 
-        // 7. Year — below ribbon, on badge background
-        const ribbonBottom = ribbonCenterY + ribbonHalfH;
-        const bottomSpace  = (cy + innerRadius) - ribbonBottom;
-        const yearY        = ribbonBottom + bottomSpace * 0.38;
+        // 9. Year — below ribbon, on badge background
+        const yearY = ribbonBottom + gapOffset;
 
         renderCtx.save();
         renderCtx.textAlign    = 'center';
