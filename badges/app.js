@@ -216,7 +216,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const innerRadius  = outerRadius - borderWidth;
         const innerCorner  = sides <= 1 ? 0 : innerRadius * 0.18;
 
-        // 1. Drop shadow behind badge
+        const ribbonCenterY = cy + innerRadius * 0.1;
+        const ribbonHalfH   = innerRadius * 0.21;
+        const tailLen       = size * 0.04;
+
+        // 1. Background ribbon — behind the badge; only the tails remain visible
+        const bgHalfH   = ribbonHalfH * 0.9;
+        const bgCenterY = ribbonCenterY + (bgHalfH * 0.5);
+        drawRibbonBackground(renderCtx, cx, bgCenterY, bgHalfH, outerRadius, tailLen, metal.base);
+
+        // 2. Drop shadow behind badge
         renderCtx.save();
         renderCtx.shadowColor   = 'rgba(0,0,0,0.30)';
         renderCtx.shadowBlur    = size * 0.06;
@@ -224,15 +233,8 @@ document.addEventListener('DOMContentLoaded', () => {
         fillShape(renderCtx, cx, cy, outerRadius, sides, cornerRadius, highlight);
         renderCtx.restore();
 
-        // 2. Badge body — flat highlight fill
+        // 3. Badge body — flat highlight fill
         fillShape(renderCtx, cx, cy, outerRadius, sides, cornerRadius, highlight);
-
-        const ribbonCenterY = cy + innerRadius * 0.1;
-        const ribbonHalfH   = innerRadius * 0.21;
-        const tailLen       = size * 0.04;
-
-        // 3. Background ribbon — full shape, behind the white ring
-        drawRibbonBackground(renderCtx, cx, ribbonCenterY, ribbonHalfH, outerRadius, tailLen, metal.base);
 
         // 4. White ring — evenodd fill covers the join between tails and body
         renderCtx.save();
