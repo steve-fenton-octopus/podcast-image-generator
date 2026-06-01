@@ -257,13 +257,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // 7. Year — below ribbon, on badge background
         const ribbonBottom = ribbonCenterY + ribbonHalfH;
         const bottomSpace  = (cy + innerRadius) - ribbonBottom;
-        const yearY        = ribbonBottom + bottomSpace * 0.52;
+        const yearY        = ribbonBottom + bottomSpace * 0.38;
 
         renderCtx.save();
         renderCtx.textAlign    = 'center';
         renderCtx.textBaseline = 'middle';
-        renderCtx.font         = `600 ${size * 0.058}px ${FONT_FAMILY}`;
-        renderCtx.fillStyle    = 'rgba(255,255,255,0.82)';
+        renderCtx.font         = `700 ${size * 0.075}px ${FONT_FAMILY}`;
+        renderCtx.fillStyle    = '#ffffff';
         renderCtx.fillText(year, cx, yearY);
         renderCtx.restore();
     }
