@@ -148,17 +148,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // ─── Ribbon ──────────────────────────────────────────────────────────────────
 
     /**
-     * Draws a horizontal ribbon with swallowtail ends that extend beyond the badge
-     * edge. The white ring (drawn on top) covers the ribbon at the border band,
-     * making the ribbon look like it wraps through the front of the badge.
-     *
-     * @param {number} centerY  Vertical centre of the ribbon.
-     * @param {number} halfH    Half the ribbon height.
-     * @param {number} bodyHW   Half-width of the body (should reach the badge edge).
-     * @param {number} tailLen  Extra length beyond bodyHW for each tail.
-     * @param {string} color    Solid fill colour.
+     * Draws the full ribbon shape (body + swallowtail ends) as the background layer.
+     * The foreground body will be painted on top of the centre, so only the tails
+     * remain visible — but having the full shape here makes vertical offsetting easy.
      */
-    function drawRibbon(renderCtx, cx, centerY, halfH, bodyHW, tailLen, color) {
+    function drawRibbonBackground(renderCtx, cx, centerY, halfH, bodyHW, tailLen, color) {
         const y1    = centerY - halfH;
         const y2    = centerY + halfH;
         const notch = halfH * 0.9;
@@ -181,10 +175,22 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCtx.lineTo(cx - bodyHW - tailLen,         y1);
 
         renderCtx.closePath();
-
         renderCtx.fillStyle = color;
         renderCtx.fill();
+        renderCtx.restore();
+    }
 
+    /**
+     * Draws only the ribbon body — the foreground face that sits in front of the
+     * badge ring, clipped to the inner badge area.
+     */
+    function drawRibbonBody(renderCtx, cx, cy, centerY, halfH, innerRadius, sides, innerCorner, color) {
+        const y1 = centerY - halfH;
+
+        renderCtx.save();
+        clipToShape(renderCtx, cx, cy, innerRadius, sides, innerCorner);
+        renderCtx.fillStyle = color;
+        renderCtx.fillRect(0, y1, renderCtx.canvas.width, halfH * 2);
         renderCtx.restore();
     }
 
@@ -221,21 +227,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // 2. Badge body — flat highlight fill
         fillShape(renderCtx, cx, cy, outerRadius, sides, cornerRadius, highlight);
 
-        // 3. Ribbon with tails — drawn over badge body, NOT clipped.
-        //    Tails extend to the canvas edge (outerRadius + tailLen ≈ size/2).
         const ribbonCenterY = cy + innerRadius * 0.1;
         const ribbonHalfH   = innerRadius * 0.21;
-        const tailLen = size * 0.04;
+        const tailLen       = size * 0.04;
 
-        drawRibbon(renderCtx, cx, ribbonCenterY, ribbonHalfH, outerRadius, tailLen, metal.base);
+        // 3. Background ribbon — full shape, behind the white ring
+        drawRibbonBackground(renderCtx, cx, ribbonCenterY, ribbonHalfH, outerRadius, tailLen, metal.base);
 
-        // 4. White ring — evenodd fill between outer and inner paths.
-        //    This covers the ribbon where it passes through the border band,
-        //    making the ribbon appear to wrap through the front of the badge.
+        // 4. White ring — evenodd fill covers the join between tails and body
         renderCtx.save();
         renderCtx.beginPath();
-        traceBadgeShape(renderCtx, cx, cy, outerRadius, sides, cornerRadius);  // outer (CW)
-        traceBadgeShape(renderCtx, cx, cy, innerRadius, sides, innerCorner);   // inner (CW)
+        traceBadgeShape(renderCtx, cx, cy, outerRadius, sides, cornerRadius);
+        traceBadgeShape(renderCtx, cx, cy, innerRadius, sides, innerCorner);
         renderCtx.fillStyle = '#ffffff';
         renderCtx.fill('evenodd');
         renderCtx.restore();
@@ -243,7 +246,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // 5. Thin metal accent line at inner edge
         strokeShape(renderCtx, cx, cy, innerRadius, sides, innerCorner, metal.base, size * 0.007);
 
-        // 6. Icon — same gap above ribbon top as the year has below ribbon bottom
+        // 6. Foreground ribbon body — on top of the white ring, clipped to inner area
+        drawRibbonBody(renderCtx, cx, cy, ribbonCenterY, ribbonHalfH, innerRadius, sides, innerCorner, metal.base);
+
+        // 7. Icon — same gap above ribbon top as the year has below ribbon bottom
         const ribbonTop   = ribbonCenterY - ribbonHalfH;
         const ribbonBottom = ribbonCenterY + ribbonHalfH;
         const bottomSpace  = (cy + innerRadius) - ribbonBottom;
@@ -275,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderCtx.drawImage(off, cx - off.width / 2, iconY - off.height / 2);
         }
 
-        // 8. Badge name on ribbon — single line, centred on ribbon midpoint
+        // 9. Badge name on ribbon — single line, centred on ribbon midpoint
         const textMaxWidth = innerRadius * 1.55;
         const fontSize     = fitSingleLine(renderCtx, name, textMaxWidth, size * 0.1, size * 0.038, '700');
 
@@ -289,7 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCtx.letterSpacing = '0';
         renderCtx.restore();
 
-        // 9. Year — below ribbon, on badge background
+        // 10. Year — below ribbon, on badge background
         const yearY = ribbonBottom + gapOffset;
 
         renderCtx.save();
