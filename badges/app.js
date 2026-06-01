@@ -253,14 +253,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const aboveSpace   = ribbonTop - (cy - innerRadius);
             const iconFontSize = Math.min(aboveSpace * 0.72, innerRadius * 0.48);
             // Place the icon so its bottom edge is gapOffset above the ribbon top
-            const iconY        = ribbonTop - gapOffset - iconFontSize * 0.3;
+            const iconY = ribbonTop - gapOffset - iconFontSize * 0.3;
 
-            renderCtx.save();
-            renderCtx.textAlign    = 'center';
-            renderCtx.textBaseline = 'middle';
-            renderCtx.font         = `${iconFontSize}px sans-serif`;
-            renderCtx.fillText(icon, cx, iconY);
-            renderCtx.restore();
+            // Render emoji to an offscreen canvas, then flood-fill white using
+            // source-in compositing — preserves the glyph shape but strips colour.
+            const pad = iconFontSize * 0.2;
+            const off = document.createElement('canvas');
+            off.width  = iconFontSize * 1.4 + pad * 2;
+            off.height = iconFontSize * 1.4 + pad * 2;
+            const offCtx = off.getContext('2d');
+
+            offCtx.font         = `${iconFontSize}px sans-serif`;
+            offCtx.textAlign    = 'center';
+            offCtx.textBaseline = 'middle';
+            offCtx.fillText(icon, off.width / 2, off.height / 2);
+
+            offCtx.globalCompositeOperation = 'source-in';
+            offCtx.fillStyle = '#ffffff';
+            offCtx.fillRect(0, 0, off.width, off.height);
+
+            renderCtx.drawImage(off, cx - off.width / 2, iconY - off.height / 2);
         }
 
         // 8. Badge name on ribbon — single line, centred on ribbon midpoint
