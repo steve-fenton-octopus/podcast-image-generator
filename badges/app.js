@@ -203,12 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCtx.fillStyle = color;
         renderCtx.fill();
 
-        // Subtle top-edge highlight for a hint of dimensionality
-        renderCtx.globalAlpha = 0.18;
-        renderCtx.fillStyle   = '#ffffff';
-        renderCtx.fillRect(cx - bodyHW, y1, bodyHW * 2, halfH * 0.13);
-        renderCtx.globalAlpha = 1;
-
         renderCtx.restore();
     }
 
