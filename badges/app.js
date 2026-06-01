@@ -132,35 +132,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ─── Text helpers ────────────────────────────────────────────────────────────
 
-    function fitText(renderCtx, text, maxWidth, maxHeight, startFontSize, minFontSize, weight) {
-        const words = text.trim().split(/\s+/).filter(Boolean);
-        if (!words.length) return { lines: [], fontSize: startFontSize };
-
+    /** Scales font down until the full text fits on a single line. */
+    function fitSingleLine(renderCtx, text, maxWidth, startFontSize, minFontSize, weight) {
         let fontSize = startFontSize;
-        let lines = [];
-
         while (fontSize >= minFontSize) {
             renderCtx.font = `${weight} ${fontSize}px ${FONT_FAMILY}`;
-            lines = [];
-            let line = words[0];
-
-            for (let i = 1; i < words.length; i++) {
-                const test = line + ' ' + words[i];
-                if (renderCtx.measureText(test).width <= maxWidth) {
-                    line = test;
-                } else {
-                    lines.push(line);
-                    line = words[i];
-                }
-            }
-            lines.push(line);
-
-            const tooWide = lines.some(l => renderCtx.measureText(l).width > maxWidth);
-            if (!tooWide && lines.length * fontSize * 1.2 <= maxHeight) break;
+            if (renderCtx.measureText(text).width <= maxWidth) break;
             fontSize -= 2;
         }
-
-        return { lines, fontSize };
+        return fontSize;
     }
 
     // ─── Ribbon ──────────────────────────────────────────────────────────────────
@@ -241,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 3. Ribbon with tails — drawn over badge body, NOT clipped.
         //    Tails extend to the canvas edge (outerRadius + tailLen ≈ size/2).
         const ribbonCenterY = cy + innerRadius * 0.1;
-        const ribbonHalfH   = innerRadius * 0.265;
+        const ribbonHalfH   = innerRadius * 0.21;
         const tailLen = size * 0.04;
 
         drawRibbon(renderCtx, cx, ribbonCenterY, ribbonHalfH, outerRadius, tailLen, metal.base);
@@ -260,12 +240,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // 5. Thin metal accent line at inner edge
         strokeShape(renderCtx, cx, cy, innerRadius, sides, innerCorner, metal.base, size * 0.007);
 
-        // 6. Badge name on ribbon — drawn last so always visible
-        const textMaxWidth  = innerRadius * 1.55;
-        const textMaxHeight = ribbonHalfH * 1.65;
-        const { lines, fontSize } = fitText(
-            renderCtx, name, textMaxWidth, textMaxHeight, size * 0.1, size * 0.038, '700'
-        );
+        // 6. Badge name on ribbon — single line, centred on ribbon midpoint
+        const textMaxWidth = innerRadius * 1.55;
+        const fontSize     = fitSingleLine(renderCtx, name, textMaxWidth, size * 0.1, size * 0.038, '700');
 
         renderCtx.save();
         renderCtx.textAlign     = 'center';
@@ -273,13 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCtx.font          = `700 ${fontSize}px ${FONT_FAMILY}`;
         renderCtx.letterSpacing = '0.04em';
         renderCtx.fillStyle     = '#ffffff';
-
-        const lineHeight = fontSize * 1.2;
-        const totalTextH = lines.length * lineHeight;
-        const textStartY = ribbonCenterY - totalTextH / 2;
-        lines.forEach((line, i) => {
-            renderCtx.fillText(line, cx, textStartY + i * lineHeight + lineHeight / 2);
-        });
+        renderCtx.fillText(name, cx, ribbonCenterY + fontSize * 0.06);
         renderCtx.letterSpacing = '0';
         renderCtx.restore();
 
