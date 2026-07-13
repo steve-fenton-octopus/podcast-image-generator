@@ -22,9 +22,18 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="badgeIcon">Icon (Unicode / Emoji)</label>
-                    <input type="text" id="badgeIcon" value="🔬" placeholder="e.g. 🔬 or ★">
-                    <span class="hint">Single character or emoji shown above the ribbon.</span>
+                    <span class="field-label">Icons (Unicode / Emoji)</span>
+                    <div class="icon-inputs">
+                        <div class="icon-input-field">
+                            <label for="badgeIcon">Tag icon</label>
+                            <input type="text" id="badgeIcon" value="★" placeholder="e.g. ★">
+                        </div>
+                        <div class="icon-input-field">
+                            <label for="badgeIcon2">Badge icon</label>
+                            <input type="text" id="badgeIcon2" value="★★★★★" placeholder="e.g. 🔬 or ★★★">
+                        </div>
+                    </div>
+                    <span class="hint">Tag icon appears in the Circular Tag corner. Badge icon accepts up to 5 characters — centre icon is largest.</span>
                 </div>
 
                 <div class="form-group">
@@ -34,17 +43,10 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="checkbox-option">
-                        <input type="checkbox" id="ribbonTails" checked>
-                        Ribbon tails
-                    </label>
-                    <span class="hint">Show the background ribbon tails behind the badge.</span>
-                </div>
-
-                <div class="form-group">
                     <label for="badgeSides">Shape</label>
                     <select id="badgeSides">
                         <option value="1">Circle</option>
+                        <option value="tag">Circular Tag</option>
                         <option value="6" selected>Hexagon</option>
                         <option value="8">Octagon</option>
                     </select>
@@ -70,11 +72,23 @@
                             Bronze
                         </label>
                     </div>
+                    <label class="checkbox-option">
+                        <input type="checkbox" id="metalBorder">
+                        Use in border
+                    </label>
                 </div>
 
                 <div class="form-group">
                     <label for="highlightColor">Highlight Color</label>
                     <input type="color" id="highlightColor" value="#2563eb">
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-option">
+                        <input type="checkbox" id="ribbonTails">
+                        Ribbon tails
+                    </label>
+                    <span class="hint">Show the background ribbon tails behind the badge.</span>
                 </div>
 
                 <div class="actions">

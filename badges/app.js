@@ -13,11 +13,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const badgeNameInput    = document.getElementById('badgeName');
     const badgeIconInput    = document.getElementById('badgeIcon');
+    const badgeIcon2Input   = document.getElementById('badgeIcon2');
     const badgeYearInput    = document.getElementById('badgeYear');
     const ribbonTailsInput  = document.getElementById('ribbonTails');
     const badgeSidesInput   = document.getElementById('badgeSides');
     const highlightColorInput = document.getElementById('highlightColor');
     const metalInputs       = document.querySelectorAll('input[name="badgeMetal"]');
+    const metalBorderInput  = document.getElementById('metalBorder');
     const generateBtn       = document.getElementById('generate-btn');
     const downloadBtn       = document.getElementById('download-btn');
 
@@ -35,11 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     badgeNameInput.addEventListener('input', refreshPreview);
     badgeIconInput.addEventListener('input', refreshPreview);
+    badgeIcon2Input.addEventListener('input', refreshPreview);
     badgeYearInput.addEventListener('input', refreshPreview);
     ribbonTailsInput.addEventListener('change', refreshPreview);
     badgeSidesInput.addEventListener('change', refreshPreview);
     highlightColorInput.addEventListener('input', refreshPreview);
     metalInputs.forEach((input) => input.addEventListener('change', refreshPreview));
+    metalBorderInput.addEventListener('change', refreshPreview);
     generateBtn.addEventListener('click', refreshPreview);
 
     downloadBtn.addEventListener('click', () => {
@@ -59,6 +63,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ─── Shape helpers ──────────────────────────────────────────────────────────
+
+    /**
+     * Traces a circular tag — a circle with the top-left quadrant squared off to the
+     * bounding-box corner (common digital certification badge format).
+     */
+    function traceCircularTag(renderCtx, cx, cy, radius) {
+        renderCtx.moveTo(cx - radius, cy);
+        renderCtx.lineTo(cx - radius, cy - radius);
+        renderCtx.lineTo(cx, cy - radius);
+        renderCtx.arc(cx, cy, radius, -Math.PI / 2, Math.PI, false);
+        renderCtx.closePath();
+    }
+
+    function fillCircularTag(renderCtx, cx, cy, radius, fillStyle) {
+        renderCtx.save();
+        renderCtx.beginPath();
+        traceCircularTag(renderCtx, cx, cy, radius);
+        renderCtx.fillStyle = fillStyle;
+        renderCtx.fill();
+        renderCtx.restore();
+    }
 
     /**
      * Traces a regular polygon with rounded corners, or a circle when sides <= 1.
@@ -134,6 +159,39 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCtx.clip();
     }
 
+    function mixWithWhite(hex, amount) {
+        const n = parseInt(hex.slice(1), 16);
+        const r = (n >> 16) & 255;
+        const g = (n >> 8) & 255;
+        const b = n & 255;
+        const mix = (c) => Math.round(c + (255 - c) * amount);
+        return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+    }
+
+    function fillBorderRing(renderCtx, cx, cy, outerRadius, innerRadius, sides, outerCorner, innerCorner, metal, useMetalGradient) {
+        renderCtx.save();
+        renderCtx.beginPath();
+        traceBadgeShape(renderCtx, cx, cy, outerRadius, sides, outerCorner);
+        traceBadgeShape(renderCtx, cx, cy, innerRadius, sides, innerCorner);
+
+        if (useMetalGradient) {
+            const gradient = renderCtx.createLinearGradient(
+                cx - outerRadius, cy - outerRadius,
+                cx + outerRadius, cy + outerRadius
+            );
+            gradient.addColorStop(0, mixWithWhite(metal.light, 0.55));
+            gradient.addColorStop(0.35, metal.light);
+            gradient.addColorStop(0.65, metal.base);
+            gradient.addColorStop(1, metal.dark);
+            renderCtx.fillStyle = gradient;
+        } else {
+            renderCtx.fillStyle = '#ffffff';
+        }
+
+        renderCtx.fill('evenodd');
+        renderCtx.restore();
+    }
+
     // ─── Text helpers ────────────────────────────────────────────────────────────
 
     /** Scales font down until the full text fits on a single line. */
@@ -145,6 +203,87 @@ document.addEventListener('DOMContentLoaded', () => {
             fontSize -= 2;
         }
         return fontSize;
+    }
+
+    /** Width/height of the offscreen canvas used by drawWhiteIcon. */
+    function iconCanvasSize(fontSize) {
+        const pad = fontSize * 0.2;
+        return fontSize * 1.4 + pad * 2;
+    }
+
+    /** Relative scale per icon — centre largest, tapering toward the edges. */
+    function badgeIconScales(count) {
+        const large = 1.28;
+        const small = 0.86;
+        const smallest = 0.58;
+
+        switch (count) {
+            case 1: return [large];
+            case 2: return [small, small];
+            case 3: return [small, large, small];
+            case 4: return [smallest, small, small, smallest];
+            case 5: return [smallest, small, large, small, smallest];
+            default: return [large];
+        }
+    }
+
+    function badgeIconRowWidth(layout) {
+        const iconsWidth = layout.canvasSizes.reduce((sum, w) => sum + w, 0);
+        return iconsWidth + layout.gap * (layout.canvasSizes.length - 1);
+    }
+
+    /** Computes final font sizes and pixel dimensions for a badge icon row. */
+    function layoutBadgeIconRow(icons, baseFontSize, maxRowWidth) {
+        const scales = badgeIconScales(icons.length);
+        const gapRatio = 0.02;
+        let fontSize = baseFontSize;
+
+        const build = (size) => {
+            const gap = size * gapRatio;
+            const sizes = scales.map((scale) => size * scale);
+            const canvasSizes = sizes.map(iconCanvasSize);
+            return { scales, fontSize: size, sizes, canvasSizes, gap, rowHeight: Math.max(...canvasSizes) };
+        };
+
+        let layout = build(fontSize);
+        const rowWidth = badgeIconRowWidth(layout);
+        if (rowWidth > maxRowWidth) {
+            fontSize *= maxRowWidth / rowWidth;
+            layout = build(fontSize);
+        }
+
+        return layout;
+    }
+
+    /** Draws up to five badge icons in a centred row with tiered sizes. */
+    function drawBadgeIconRow(renderCtx, icons, cx, centerY, layout) {
+        const totalWidth = badgeIconRowWidth(layout);
+        let x = cx - totalWidth / 2;
+
+        for (let i = 0; i < icons.length; i++) {
+            drawWhiteIcon(renderCtx, icons[i], x + layout.canvasSizes[i] / 2, centerY, layout.sizes[i]);
+            x += layout.canvasSizes[i] + layout.gap;
+        }
+    }
+
+    /** Renders a single emoji/glyph in white via offscreen flood-fill. */
+    function drawWhiteIcon(renderCtx, icon, centerX, centerY, fontSize) {
+        const canvasSize = iconCanvasSize(fontSize);
+        const off = document.createElement('canvas');
+        off.width  = canvasSize;
+        off.height = canvasSize;
+        const offCtx = off.getContext('2d');
+
+        offCtx.font         = `${fontSize}px sans-serif`;
+        offCtx.textAlign    = 'center';
+        offCtx.textBaseline = 'middle';
+        offCtx.fillText(icon, off.width / 2, off.height / 2);
+
+        offCtx.globalCompositeOperation = 'source-in';
+        offCtx.fillStyle = '#ffffff';
+        offCtx.fillRect(0, 0, off.width, off.height);
+
+        renderCtx.drawImage(off, centerX - canvasSize / 2, centerY - canvasSize / 2);
     }
 
     // ─── Ribbon ──────────────────────────────────────────────────────────────────
@@ -203,12 +342,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const cx    = size / 2;
         const cy    = size / 2;
 
-        const sides     = parseInt(badgeSidesInput.value, 10) || 6;
+        const shapeValue   = badgeSidesInput.value;
+        const isCircularTag = shapeValue === 'tag';
+        const sides        = isCircularTag ? 1 : (parseInt(shapeValue, 10) || 6);
         const metal     = METAL_COLORS[getSelectedMetal()];
         const highlight = highlightColorInput.value;
         const name       = (badgeNameInput.value.trim() || 'Badge').toUpperCase();
-        const icon       = badgeIconInput.value.trim();
-        const footerText = badgeYearInput.value.trim();
+        const tagIcon     = badgeIconInput.value.trim();
+        const badgeIcons  = [...badgeIcon2Input.value.trim()].slice(0, 5);
+        const footerText  = badgeYearInput.value.trim();
 
         renderCtx.clearRect(0, 0, size, size);
 
@@ -217,6 +359,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const borderWidth  = size * 0.044;
         const innerRadius  = outerRadius - borderWidth;
         const innerCorner  = sides <= 1 ? 0 : innerRadius * 0.18;
+        // Outer tag flange matches the white border ring thickness.
+        const tagRadius    = outerRadius + borderWidth;
 
         const ribbonCenterY = cy + innerRadius * 0.1;
         const ribbonHalfH   = innerRadius * 0.21;
@@ -234,20 +378,23 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCtx.shadowColor   = 'rgba(0,0,0,0.30)';
         renderCtx.shadowBlur    = size * 0.06;
         renderCtx.shadowOffsetY = size * 0.022;
-        fillShape(renderCtx, cx, cy, outerRadius, sides, cornerRadius, highlight);
+        if (isCircularTag) {
+            fillCircularTag(renderCtx, cx, cy, tagRadius, highlight);
+        } else {
+            fillShape(renderCtx, cx, cy, outerRadius, sides, cornerRadius, highlight);
+        }
         renderCtx.restore();
 
         // 3. Badge body — flat highlight fill
-        fillShape(renderCtx, cx, cy, outerRadius, sides, cornerRadius, highlight);
+        if (isCircularTag) {
+            fillCircularTag(renderCtx, cx, cy, tagRadius, highlight);
+            fillShape(renderCtx, cx, cy, outerRadius, sides, cornerRadius, highlight);
+        } else {
+            fillShape(renderCtx, cx, cy, outerRadius, sides, cornerRadius, highlight);
+        }
 
-        // 4. White ring — evenodd fill covers the join between tails and body
-        renderCtx.save();
-        renderCtx.beginPath();
-        traceBadgeShape(renderCtx, cx, cy, outerRadius, sides, cornerRadius);
-        traceBadgeShape(renderCtx, cx, cy, innerRadius, sides, innerCorner);
-        renderCtx.fillStyle = '#ffffff';
-        renderCtx.fill('evenodd');
-        renderCtx.restore();
+        // 4. Border ring — white, or radial metal gradient when enabled
+        fillBorderRing(renderCtx, cx, cy, outerRadius, innerRadius, sides, cornerRadius, innerCorner, metal, metalBorderInput.checked);
 
         // 5. Thin metal accent line at inner edge
         strokeShape(renderCtx, cx, cy, innerRadius, sides, innerCorner, metal.base, size * 0.007);
@@ -255,36 +402,37 @@ document.addEventListener('DOMContentLoaded', () => {
         // 6. Foreground ribbon body — on top of the white ring, clipped to inner area
         drawRibbonBody(renderCtx, cx, cy, ribbonCenterY, ribbonHalfH, innerRadius, sides, innerCorner, metal.base);
 
-        // 7. Icon — same gap above ribbon top as footer text has below ribbon bottom
-        const ribbonTop   = ribbonCenterY - ribbonHalfH;
+        // 7. Badge icons — up to five in a row above the ribbon, centre largest
+        const ribbonTop    = ribbonCenterY - ribbonHalfH;
         const ribbonBottom = ribbonCenterY + ribbonHalfH;
         const bottomSpace  = (cy + innerRadius) - ribbonBottom;
         const gapOffset    = bottomSpace * 0.38;
 
-        if (icon) {
-            const aboveSpace   = ribbonTop - (cy - innerRadius);
-            const iconFontSize = Math.min(aboveSpace * 0.72, innerRadius * 0.48);
-            // Place the icon so its bottom edge is gapOffset above the ribbon top
-            const iconY = ribbonTop - gapOffset - iconFontSize * 0.3;
+        if (badgeIcons.length) {
+            const aboveTop       = cy - innerRadius;
+            const rowBottom      = ribbonTop - gapOffset;
+            const availableHeight = rowBottom - aboveTop;
+            const maxRowWidth    = innerRadius * 1.45;
+            let baseFontSize     = Math.min(availableHeight / 1.8, innerRadius * 0.54);
 
-            // Render emoji to an offscreen canvas, then flood-fill white using
-            // source-in compositing — preserves the glyph shape but strips colour.
-            const pad = iconFontSize * 0.2;
-            const off = document.createElement('canvas');
-            off.width  = iconFontSize * 1.4 + pad * 2;
-            off.height = iconFontSize * 1.4 + pad * 2;
-            const offCtx = off.getContext('2d');
+            let layout = layoutBadgeIconRow(badgeIcons, baseFontSize, maxRowWidth);
+            if (layout.rowHeight > availableHeight) {
+                baseFontSize *= availableHeight / layout.rowHeight;
+                layout = layoutBadgeIconRow(badgeIcons, baseFontSize, maxRowWidth);
+            }
 
-            offCtx.font         = `${iconFontSize}px sans-serif`;
-            offCtx.textAlign    = 'center';
-            offCtx.textBaseline = 'middle';
-            offCtx.fillText(icon, off.width / 2, off.height / 2);
+            const iconY = rowBottom - layout.rowHeight / 2 + 80;
+            drawBadgeIconRow(renderCtx, badgeIcons, cx, iconY, layout);
+        }
 
-            offCtx.globalCompositeOperation = 'source-in';
-            offCtx.fillStyle = '#ffffff';
-            offCtx.fillRect(0, 0, off.width, off.height);
-
-            renderCtx.drawImage(off, cx - off.width / 2, iconY - off.height / 2);
+        // 8. Tag icon — top-left squared corner, outside the white border ring
+        if (isCircularTag && tagIcon) {
+            const tagFlange    = tagRadius - outerRadius;
+            const tagIconSize  = tagFlange * 2.3;
+            const tagIconCanvas = iconCanvasSize(tagIconSize);
+            const cornerX      = cx - tagRadius + tagFlange + tagIconCanvas / 2;
+            const cornerY      = cy - tagRadius + tagFlange + tagIconCanvas / 2;
+            drawWhiteIcon(renderCtx, tagIcon, cornerX, cornerY, tagIconSize);
         }
 
         // 9. Badge name on ribbon — single line, centred on ribbon midpoint
