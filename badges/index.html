@@ -29,17 +29,26 @@
 
                 <div class="form-group">
                     <label for="badgeYear">Year</label>
-                    <input type="number" id="badgeYear" value="2026" min="1900" max="2100">
+                    <input type="text" id="badgeYear" value="2026" placeholder="e.g. 2026">
+                    <span class="hint">Optional. Leave blank to omit, or enter any short line below the ribbon.</span>
                 </div>
 
                 <div class="form-group">
-                    <label for="badgeSides">Number of Sides</label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" id="ribbonTails" checked>
+                        Ribbon tails
+                    </label>
+                    <span class="hint">Show the background ribbon tails behind the badge.</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="badgeSides">Shape</label>
                     <select id="badgeSides">
-                        <option value="1">1 — Circle</option>
-                        <option value="6" selected>6 — Hexagon</option>
-                        <option value="8">8 — Octagon</option>
+                        <option value="1">Circle</option>
+                        <option value="6" selected>Hexagon</option>
+                        <option value="8">Octagon</option>
                     </select>
-                    <span class="hint">1 draws a circle; 3 or more draws a regular polygon.</span>
+                    <span class="hint">Choose the badge outline shape.</span>
                 </div>
 
                 <div class="form-group">

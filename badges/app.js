@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const badgeNameInput    = document.getElementById('badgeName');
     const badgeIconInput    = document.getElementById('badgeIcon');
     const badgeYearInput    = document.getElementById('badgeYear');
+    const ribbonTailsInput  = document.getElementById('ribbonTails');
     const badgeSidesInput   = document.getElementById('badgeSides');
     const highlightColorInput = document.getElementById('highlightColor');
     const metalInputs       = document.querySelectorAll('input[name="badgeMetal"]');
@@ -35,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     badgeNameInput.addEventListener('input', refreshPreview);
     badgeIconInput.addEventListener('input', refreshPreview);
     badgeYearInput.addEventListener('input', refreshPreview);
+    ribbonTailsInput.addEventListener('change', refreshPreview);
     badgeSidesInput.addEventListener('change', refreshPreview);
     highlightColorInput.addEventListener('input', refreshPreview);
     metalInputs.forEach((input) => input.addEventListener('change', refreshPreview));
@@ -204,9 +206,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const sides     = parseInt(badgeSidesInput.value, 10) || 6;
         const metal     = METAL_COLORS[getSelectedMetal()];
         const highlight = highlightColorInput.value;
-        const name      = (badgeNameInput.value.trim() || 'Badge').toUpperCase();
-        const icon      = badgeIconInput.value.trim();
-        const year      = String(badgeYearInput.value || new Date().getFullYear());
+        const name       = (badgeNameInput.value.trim() || 'Badge').toUpperCase();
+        const icon       = badgeIconInput.value.trim();
+        const footerText = badgeYearInput.value.trim();
 
         renderCtx.clearRect(0, 0, size, size);
 
@@ -221,9 +223,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const tailLen       = size * 0.04;
 
         // 1. Background ribbon — behind the badge; only the tails remain visible
-        const bgHalfH   = ribbonHalfH * 0.9;
-        const bgCenterY = ribbonCenterY + (bgHalfH * 0.5);
-        drawRibbonBackground(renderCtx, cx, bgCenterY, bgHalfH, outerRadius, tailLen, metal.base);
+        if (ribbonTailsInput.checked) {
+            const bgHalfH   = ribbonHalfH * 0.9;
+            const bgCenterY = ribbonCenterY + (bgHalfH * 0.5);
+            drawRibbonBackground(renderCtx, cx, bgCenterY, bgHalfH, outerRadius, tailLen, metal.base);
+        }
 
         // 2. Drop shadow behind badge
         renderCtx.save();
@@ -251,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 6. Foreground ribbon body — on top of the white ring, clipped to inner area
         drawRibbonBody(renderCtx, cx, cy, ribbonCenterY, ribbonHalfH, innerRadius, sides, innerCorner, metal.base);
 
-        // 7. Icon — same gap above ribbon top as the year has below ribbon bottom
+        // 7. Icon — same gap above ribbon top as footer text has below ribbon bottom
         const ribbonTop   = ribbonCenterY - ribbonHalfH;
         const ribbonBottom = ribbonCenterY + ribbonHalfH;
         const bottomSpace  = (cy + innerRadius) - ribbonBottom;
@@ -297,15 +301,19 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCtx.letterSpacing = '0';
         renderCtx.restore();
 
-        // 10. Year — below ribbon, on badge background
-        const yearY = ribbonBottom + gapOffset;
+        // 10. Footer text — below ribbon, on badge background (optional)
+        if (footerText) {
+            const footerY = ribbonBottom + gapOffset;
+            const footerMaxWidth = innerRadius * 1.35;
+            const footerFontSize = fitSingleLine(renderCtx, footerText, footerMaxWidth, size * 0.075, size * 0.04, '700');
 
-        renderCtx.save();
-        renderCtx.textAlign    = 'center';
-        renderCtx.textBaseline = 'middle';
-        renderCtx.font         = `700 ${size * 0.075}px ${FONT_FAMILY}`;
-        renderCtx.fillStyle    = '#ffffff';
-        renderCtx.fillText(year, cx, yearY);
-        renderCtx.restore();
+            renderCtx.save();
+            renderCtx.textAlign    = 'center';
+            renderCtx.textBaseline = 'middle';
+            renderCtx.font         = `700 ${footerFontSize}px ${FONT_FAMILY}`;
+            renderCtx.fillStyle    = '#ffffff';
+            renderCtx.fillText(footerText, cx, footerY);
+            renderCtx.restore();
+        }
     }
 });

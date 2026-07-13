@@ -179,6 +179,23 @@ input[type="color"]::-webkit-color-swatch {
     background: #B87333;
 }
 
+.checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.checkbox-option input {
+    accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
 .actions {
     display: flex;
     flex-direction: column;
