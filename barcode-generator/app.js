@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+function initApp() {
     // EAN-13 / ISBN-13 Encoding Tables
     const PARITY_MAP = [
         'LLLLLL', // 0
@@ -282,15 +282,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Read ISBN from URL query parameter (e.g. ?isbn=978-1-7649617-0-7)
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('isbn')) {
-        const isbnParam = urlParams.get('isbn').trim();
-        if (isbnParam) {
-            isbnInput.value = isbnParam;
+    // Robust query parameter lookup (case-insensitive, supporting search and hash query strings)
+    function getQueryParam(paramName) {
+        const targetKey = paramName.toLowerCase();
+        
+        // 1. Search in location.search
+        if (window.location.search) {
+            const searchParams = new URLSearchParams(window.location.search);
+            for (const [key, value] of searchParams.entries()) {
+                if (key.toLowerCase() === targetKey) {
+                    return value;
+                }
+            }
         }
+
+        // 2. Search in location.hash
+        if (window.location.hash && window.location.hash.includes('?')) {
+            const hashQuery = window.location.hash.substring(window.location.hash.indexOf('?'));
+            const hashParams = new URLSearchParams(hashQuery);
+            for (const [key, value] of hashParams.entries()) {
+                if (key.toLowerCase() === targetKey) {
+                    return value;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    const isbnQueryVal = getQueryParam('isbn');
+    if (isbnQueryVal && isbnQueryVal.trim() !== '') {
+        isbnInput.value = isbnQueryVal.trim();
     }
 
     // Initial validation and setup
     updateValidationState();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}
