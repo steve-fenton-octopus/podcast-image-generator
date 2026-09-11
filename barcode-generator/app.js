@@ -33,7 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
 
     const isbnInput = document.getElementById('isbnInput');
-    const titleInput = document.getElementById('titleInput');
     const bgColorInput = document.getElementById('bgColor');
     const barColorInput = document.getElementById('barColor');
     const showTextInput = document.getElementById('showText');
@@ -118,7 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event Listeners
     isbnInput.addEventListener('input', updateValidationState);
-    titleInput.addEventListener('input', requestRender);
     bgColorInput.addEventListener('input', requestRender);
     barColorInput.addEventListener('input', requestRender);
     showTextInput.addEventListener('change', requestRender);
@@ -156,25 +154,11 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = bgColor;
         ctx.fillRect(0, 0, width, height);
 
-        // Draw top title/label if present
-        const titleText = titleInput.value.trim();
-        let topMargin = 120;
-        if (titleText) {
-            ctx.save();
-            ctx.fillStyle = barColor;
-            ctx.font = '600 52px "Inter", sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'top';
-            ctx.fillText(titleText, width / 2, 80);
-            ctx.restore();
-            topMargin = 200;
-        }
-
         // If ISBN is invalid (not 13 digits), display friendly error box on canvas
         if (!cleanISBN || cleanISBN.length !== 13 || !/^\d{13}$/.test(cleanISBN)) {
             ctx.save();
             ctx.fillStyle = '#ef4444';
-            ctx.font = '600 48px "Inter", sans-serif';
+            ctx.font = '600 44px "Inter", sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText('Please enter a valid 13-digit ISBN', width / 2, height / 2);
@@ -234,24 +218,25 @@ document.addEventListener('DOMContentLoaded', () => {
         // Calculate dimensions
         // Total modules = 95
         const totalModules = modules.length;
-        const quietZoneModules = 12; // Modules on left and right for quiet zone
+        const quietZoneModules = 10; // Quiet zone
         const totalUnits = totalModules + (quietZoneModules * 2);
 
         // Compute module width to fit nicely on canvas
-        const availableWidth = width * 0.75;
+        const availableWidth = width * 0.82;
         const moduleWidth = availableWidth / totalUnits;
         const barcodeWidth = totalUnits * moduleWidth;
         const startX = (width - barcodeWidth) / 2 + (quietZoneModules * moduleWidth);
 
         // Height calculations
-        let barHeight = 450;
-        if (barHeightPreset === 'compact') barHeight = 320;
-        if (barHeightPreset === 'tall') barHeight = 600;
+        let barHeight = 350;
+        if (barHeightPreset === 'compact') barHeight = 250;
+        if (barHeightPreset === 'tall') barHeight = 420;
 
-        const startY = topMargin + (height - topMargin - barHeight - (showText ? 150 : 50)) / 2;
-        const guardExtension = showText ? 60 : 0;
+        const guardExtension = showText ? 45 : 0;
         const dataBarHeight = barHeight;
         const guardBarHeight = barHeight + guardExtension;
+        const totalContentHeight = guardBarHeight + (showText ? 45 : 0);
+        const startY = (height - totalContentHeight) / 2;
 
         // Draw Barcode Bars
         ctx.fillStyle = barColor;
@@ -270,10 +255,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (showText) {
             ctx.save();
             ctx.fillStyle = barColor;
-            ctx.font = '700 76px "Roboto Mono", "Courier New", monospace';
+            ctx.font = '700 60px "Roboto Mono", "Courier New", monospace';
             ctx.textBaseline = 'top';
 
-            const textY = startY + dataBarHeight + 15;
+            const textY = startY + dataBarHeight + 12;
 
             // First digit (outside start guard)
             ctx.textAlign = 'right';
@@ -281,7 +266,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillText(cleanISBN[0], firstDigitX, textY);
 
             // Left 6 digits group (between start and center guards)
-            // Left block modules index range: 3 to 44
             ctx.textAlign = 'center';
             const leftBlockStartX = startX + (3 * moduleWidth);
             const leftBlockWidth = 42 * moduleWidth;
@@ -289,7 +273,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillText(cleanISBN.slice(1, 7), leftBlockCenterX, textY);
 
             // Right 6 digits group (between center and end guards)
-            // Right block modules index range: 50 to 91
             const rightBlockStartX = startX + ((3 + 42 + 5) * moduleWidth);
             const rightBlockWidth = 42 * moduleWidth;
             const rightBlockCenterX = rightBlockStartX + (rightBlockWidth / 2);
