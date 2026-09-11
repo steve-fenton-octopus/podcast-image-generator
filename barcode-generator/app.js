@@ -282,6 +282,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Read ISBN from URL query parameter (e.g. ?isbn=978-1-7649617-0-7)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('isbn')) {
+        const isbnParam = urlParams.get('isbn').trim();
+        if (isbnParam) {
+            isbnInput.value = isbnParam;
+        }
+    }
+
     // Initial validation and setup
     updateValidationState();
 });
