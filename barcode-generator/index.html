@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISBN-13 Barcode Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Libre+Barcode+128&family=OCRB&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>Barcode Generator</h1>
+                <p>Generate high-resolution ISBN-13 barcodes.</p>
+            </div>
+            
+            <form id="generator-form" onsubmit="event.preventDefault();">
+                <div class="form-group">
+                    <label for="isbnInput">ISBN-13 Number</label>
+                    <input type="text" id="isbnInput" value="978-3-16-148410-0" placeholder="e.g. 978-3-16-148410-0" autocomplete="off" spellcheck="false">
+                    <div id="validation-message" class="validation-message"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="titleInput">Top Title / Label (Optional)</label>
+                    <input type="text" id="titleInput" value="ISBN 978-3-16-148410-0" placeholder="e.g. My Book Title or ISBN string">
+                </div>
+
+                <div class="form-group row">
+                    <div class="col">
+                        <label for="bgColor">Background Color</label>
+                        <input type="color" id="bgColor" value="#ffffff">
+                    </div>
+                    <div class="col">
+                        <label for="barColor">Bar Color</label>
+                        <input type="color" id="barColor" value="#000000">
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <div class="col">
+                        <label for="showText">Show Digits Text</label>
+                        <select id="showText" class="form-select">
+                            <option value="true" selected>Yes (Standard EAN-13)</option>
+                            <option value="false">No (Bars only)</option>
+                        </select>
+                    </div>
+                    <div class="col">
+                        <label for="barHeightScale">Bar Height</label>
+                        <select id="barHeightScale" class="form-select">
+                            <option value="compact">Compact</option>
+                            <option value="standard" selected>Standard</option>
+                            <option value="tall">Tall</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="section-divider"></div>
+
+                <div class="actions">
+                    <button type="button" id="generate-btn" class="btn btn-primary">Generate Barcode</button>
+                    <button type="button" id="download-btn" class="btn btn-success">Download Barcode (.png)</button>
+                </div>
+            </form>
+        </aside>
+        
+        <main class="preview-area">
+            <div class="canvas-wrapper">
+                <canvas id="barcode-canvas" width="1920" height="1080"></canvas>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
