@@ -1,5 +1,5 @@
 {
-    "name": "cd-office-hours-thumbnail-generator",
+    "name": "little-things-generator",
     "version": "1.0.0",
     "scripts": {
         "start": "pnpm serve -p 8080"
