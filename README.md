@@ -1,13 +1,13 @@
-# CD Office Hours thumbnail generator
+# Podcast Hours thumbnail generator
 
-A simple comic book thumbnail generator for CD Office Hours episodes.
+A simple comic book thumbnail generator for Software Delivered Hours episodes.
 
 [View the application](https://steve-fenton-octopus.github.io/podcast-image-generator/)
 
 ## Usage instructions
 
 1. Enter the episode details in the form on the left hand side.
-   1. Series title should be "CD Office Hours"
+   1. Series title should be "Software Delivered"
    2. Episode title will change each week, choose to be snappy or concise
    3. Episode number should be the episode number with a `#` prefix, e.g. `#123`
    4. Choose a theme color and allow some randomness so it's different each time
