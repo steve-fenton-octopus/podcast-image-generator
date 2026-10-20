@@ -2,8 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const FONT_LOAD_DELAY_MS = 200;
     const COVER_CANVAS_SIZE = 1440;
 
-    const SERIES_TITLE_Y = 250;
-    const SERIES_TITLE_SIZE = 160;
+    const SERIES_TITLE_Y = 200;
+    const SERIES_TITLE_SIZE = 190;
     const EPISODE_TITLE_SIZE = 200;
     const COVER_EPISODE_TITLE_Y_OFFSET = 100;
     const EPISODE_TITLE_BOTTOM_MIN_GAP = 150;
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const SUNBURST_RAY_COUNT = 24;
     const SUNBURST_RADIUS_PADDING = 100;
-    const CHEVRON_HEIGHT_RATIO = 0.25;
+    const CHEVRON_HEIGHT_RATIO = 0.55;
     const DIVIDER_LINE_WIDTH = 14;
 
     const STATE = {
