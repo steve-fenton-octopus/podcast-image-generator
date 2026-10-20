@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 : (width - padding * (n + 1)) / n;
         const groupWidth = n * panelWidth + (n - 1) * padding;
         const startX = (width - groupWidth) / 2;
-        const panelY = height / 2 - 200;
+        const panelY = height / 2 - 280;
         const panelHeight = 800;
 
         activeParticipants.forEach((p, idx) => {
