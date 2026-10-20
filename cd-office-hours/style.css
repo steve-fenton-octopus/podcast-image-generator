@@ -96,7 +96,7 @@ label {
     color: var(--text-secondary);
 }
 
-input[type="text"], input[type="color"] {
+input[type="text"], input[type="color"], select {
     width: 100%;
     padding: 10px 12px;
     border-radius: 6px;
@@ -109,7 +109,11 @@ input[type="text"], input[type="color"] {
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-input[type="text"]:focus {
+select {
+    cursor: pointer;
+}
+
+input[type="text"]:focus, select:focus {
     border-color: var(--accent);
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }

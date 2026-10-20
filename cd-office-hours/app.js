@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const SUNBURST_RAY_COUNT = 24;
     const SUNBURST_RADIUS_PADDING = 100;
+    const CHEVRON_HEIGHT_RATIO = 0.25;
+    const DIVIDER_LINE_WIDTH = 14;
 
     const STATE = {
         participants: [] // stores { id, name, imgObj, imgSrc }
@@ -38,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const episodeTitleInput = document.getElementById('episodeTitle');
     const episodeNumberInput = document.getElementById('episodeNumber');
     const themeColorInput = document.getElementById('themeColor');
+    const backgroundPatternSelect = document.getElementById('backgroundPattern');
 
     // Buttons
     const generateBtn = document.getElementById('generate-btn');
@@ -138,6 +141,9 @@ document.addEventListener('DOMContentLoaded', () => {
     episodeTitleInput.addEventListener('input', refreshPreview);
     episodeNumberInput.addEventListener('input', refreshPreview);
     themeColorInput.addEventListener('input', refreshPreview);
+    if (backgroundPatternSelect) {
+        backgroundPatternSelect.addEventListener('change', refreshPreview);
+    }
 
     // Render Canvas
     generateBtn.addEventListener('click', () => {
@@ -176,11 +182,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const width = renderCtx.canvas.width;
         const height = renderCtx.canvas.height;
         const themeColor = themeColorInput.value;
+        const pattern = backgroundPatternSelect ? backgroundPatternSelect.value : 'chevron';
 
         renderCtx.fillStyle = '#111';
         renderCtx.fillRect(0, 0, width, height);
 
-        drawSunburst(renderCtx, width, height, themeColor);
+        if (pattern === 'sunburst') {
+            drawSunburst(renderCtx, width, height, themeColor);
+        } else {
+            drawChevron(renderCtx, width, height, themeColor);
+        }
         drawHalftone(renderCtx, width, height);
 
         if (!isCover) {
@@ -206,6 +217,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 true
             );
         }
+    }
+
+    function drawChevron(ctx, width, height, baseColor) {
+        ctx.save();
+
+        const chevronHeight = height * CHEVRON_HEIGHT_RATIO;
+        const midY = height / 2;
+        const peakY = midY - chevronHeight / 2;
+        const sideY = midY + chevronHeight / 2;
+
+        // Upper half (lighter color)
+        ctx.fillStyle = lightenColor(baseColor, 40);
+        ctx.fillRect(0, 0, width, height);
+
+        // Lower half (solid block color)
+        ctx.beginPath();
+        ctx.moveTo(0, sideY);
+        ctx.lineTo(width / 2, peakY);
+        ctx.lineTo(width, sideY);
+        ctx.lineTo(width, height);
+        ctx.lineTo(0, height);
+        ctx.closePath();
+
+        ctx.fillStyle = baseColor;
+        ctx.fill();
+
+        // Dividing bold black line (chevron pointing up across full canvas width)
+        const slope = (sideY - peakY) / (width / 2);
+        const overreach = 20;
+        ctx.beginPath();
+        ctx.moveTo(-overreach, sideY + slope * overreach);
+        ctx.lineTo(width / 2, peakY);
+        ctx.lineTo(width + overreach, sideY + slope * overreach);
+
+        ctx.lineWidth = DIVIDER_LINE_WIDTH;
+        ctx.strokeStyle = '#000000';
+        ctx.lineJoin = 'miter';
+        ctx.miterLimit = 10;
+        ctx.stroke();
+
+        ctx.restore();
     }
 
     function drawSunburst(ctx, width, height, baseColor) {
